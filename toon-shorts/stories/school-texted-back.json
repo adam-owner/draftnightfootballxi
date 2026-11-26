@@ -6,27 +6,29 @@
   "mood": "cold moonlit blue, buzzing fluorescent flicker, red exit-sign glow, dread",
   "voices": {
     "narrator": {
-      "kokoro": "am_michael",
-      "speed": 0.9,
-      "fx": "aecho=0.7:0.6:40:0.18"
+      "kokoro": "am_fenrir",
+      "speed": 0.88,
+      "fx": "lowpass=f=7000,aecho=0.6:0.5:35:0.12,volume=0.5"
     },
     "mom": {
       "kokoro": "af_heart",
-      "speed": 1.0,
-      "fx": "highpass=f=300,lowpass=f=3400,aecho=0.6:0.5:20:0.1"
+      "speed": 0.95,
+      "fx": "highpass=f=180,lowpass=f=5500,volume=1.1"
     },
     "mom_live": {
       "kokoro": "af_heart",
-      "speed": 0.92
+      "speed": 0.9,
+      "fx": "lowpass=f=6500,volume=1.05"
     },
     "adam": {
-      "kokoro": "am_puck",
-      "speed": 0.95
+      "kokoro": "am_liam",
+      "speed": 0.95,
+      "fx": "volume=0.9"
     },
     "double": {
-      "kokoro": "am_puck",
-      "speed": 0.78,
-      "fx": "asetrate=44100*0.86,aresample=44100,aecho=0.8:0.85:90|180:0.45|0.3,lowpass=f=5000"
+      "kokoro": "am_onyx",
+      "speed": 0.82,
+      "fx": "asetrate=44100*0.72,aresample=44100,atempo=1.15,lowpass=f=3000,aecho=0.8:0.85:140|280:0.35|0.2,volume=1.8"
     }
   },
   "music": "horror drone: low detuned sine bed, dissonant string cluster swells, ticking clock, heartbeat during the reveal, stingers on each shock",
@@ -122,8 +124,8 @@
         },
         {
           "who": "mom",
-          "text": "Adam, are you asleep? I'm outside your bedroom. Open the door.",
-          "bubble": "Adam, are you asleep? I'm outside your bedroom. Open the door."
+          "text": "Are you asleep? I'm outside your bedroom. Open the door.",
+          "bubble": "Are you asleep? I'm outside your bedroom. Open the door."
         },
         {
           "who": "mom",
@@ -168,7 +170,7 @@
         },
         {
           "who": "mom",
-          "text": "Adam? Why are you calling me? You're literally upstairs in your bedroom."
+          "text": "Why are you calling me? You're literally upstairs in your bedroom."
         }
       ],
       "phone": {
@@ -194,7 +196,7 @@
       "lines": [
         {
           "who": "mom_live",
-          "text": "Adam... don't open your bedroom door.",
+          "text": "Don't... open your bedroom door.",
           "delay": 1.6
         }
       ]
@@ -275,7 +277,7 @@
       "lines": [
         {
           "who": "double",
-          "text": "Adam. We need to go home.",
+          "text": "We need to go home.",
           "delay": 0.8
         }
       ]
@@ -312,11 +314,11 @@
     },
     "B": {
       "survive": true,
-      "text": "You walk toward it. 'Who are you?' It turns around. It has your face, but its eyes are closed, like it's still asleep. 'I'm the part of you that never woke up.' The lights snap on. It's 7:30 AM. The bell is ringing and your teacher is shaking your shoulder. You fell asleep in class. Your phone shows one message from last night, 11:47 PM, from Mom: 'Thanks for coming home, Adam. Goodnight.'"
+      "text": "You walk toward it. 'Who are you?' It turns around. It has your face, but its eyes are closed, like it's still asleep. 'I'm the part of you that never woke up.' The lights snap on. It's 7:30 AM. The bell is ringing and your teacher is shaking your shoulder. You fell asleep in class. Your phone shows one message from last night, 11:47 PM, from Mom: 'Thanks for coming home. Goodnight.'"
     },
     "C": {
       "survive": false,
-      "text": "You follow the voice out of the school, through the dark streets, all the way home. Mom opens the front door. She looks at you. Then at the thing standing beside you. Then she smiles at it, steps aside, and lets it in. The door closes. The porch light goes out. Your phone buzzes one last time. MOM: 'Goodnight, Adam.' You were never the one she was waiting for."
+      "text": "You follow the voice out of the school, through the dark streets, all the way home. Mom opens the front door. She looks at you. Then at the thing standing beside you. Then she smiles at it, steps aside, and lets it in. The door closes. The porch light goes out. Your phone buzzes one last time. MOM: 'Goodnight.' You were never the one she was waiting for."
     }
   }
 }
