@@ -1,0 +1,5 @@
+toon-shorts/out/
+**/_seg/
+__pycache__/
+*.pyc
+.env

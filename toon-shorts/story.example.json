@@ -1,0 +1,132 @@
+{
+  "project": "umbrella-man",
+  "title": "The Umbrella Man",
+  "aspect": "9:16",
+  "mood": "warm desert sun, dry dusty air, playful and mischievous",
+  "voice": {
+    "voice_id": "English_magnetic_voiced_man",
+    "speed": 1.05,
+    "delivery": "calm deadpan storyteller, dry wit, unhurried pace"
+  },
+  "music": "quirky understated instrumental, pizzicato strings, soft marimba, light shuffle percussion, mischievous small-town mood, loopable",
+  "mix": { "voice": 1.0, "music": 0.22, "gap": 0.15, "lufs": -16 },
+
+  "characters": {
+    "walt": "middle-aged umbrella seller; wide straw sun hat with a red band, short black hair under it, tiny grey moustache, half-lidded deadpan eyes; mustard-yellow vest over a white shirt as the bean-shaped torso; always holding a closed black umbrella",
+    "sheriff": "town sheriff; tan cowboy hat with a gold star badge on it, aviator sunglasses, thick brown moustache; dark green uniform torso with a gold star on the chest",
+    "townsfolk": "assorted townspeople in the same character style: one in a pink sun bonnet, one in a blue baseball cap, one bald with round glasses, plain pastel shirt torsos"
+  },
+
+  "locations": {
+    "main_street": "a sun-baked small desert town main street: adobe and clapboard storefronts, a saloon, a general store, cracked asphalt, tumbleweeds, a tall rusty water tower on stilts looming over the street, cacti, heat shimmer",
+    "stall": "Walt's tiny wooden umbrella stall on the sidewalk of the desert main street: striped awning, rows of colourful folded umbrellas in a barrel, a hand-painted price board with no readable text",
+    "tower_night": "the top of the rusty town water tower at night: catwalk railing, big iron valve wheel, moonlight, town lights twinkling far below",
+    "sky": "huge desert sky over the town"
+  },
+
+  "shots": [
+    {
+      "id": 1, "location": "stall", "characters": ["walt"], "shot_size": "WIDE", "camera": "push_in",
+      "visual": "Walt stands proudly beside his umbrella stall under a blazing sun, everything around him dry and dusty",
+      "motion": "Walt gives one slow confident nod; heat shimmer ripples; a tumbleweed rolls past",
+      "narration": "This man sells umbrellas in the driest town in America."
+    },
+    {
+      "id": 2, "location": "main_street", "characters": [], "shot_size": "INSERT", "camera": "push_in",
+      "visual": "a bone-dry glass rain gauge on a fence post, filled with dust and one dead fly, cracked earth below",
+      "motion": "dust blows off the rim of the gauge; a lizard scurries past",
+      "narration": "It hasn't rained here in forty-one years."
+    },
+    {
+      "id": 3, "location": "main_street", "characters": ["townsfolk"], "shot_size": "WIDE", "camera": "track",
+      "visual": "three townsfolk walk past the stall pointing and laughing, Walt small in the background",
+      "motion": "townsfolk bounce as they walk, one doubles over laughing",
+      "narration": "Every morning, people walk past his stall and laugh."
+    },
+    {
+      "id": 4, "location": "stall", "characters": ["walt"], "shot_size": "CLOSE", "camera": "static",
+      "visual": "close-up of Walt's completely unbothered half-lidded deadpan face",
+      "motion": "Walt blinks slowly, once; his moustache twitches",
+      "narration": "Walt doesn't laugh. Walt waits."
+    },
+    {
+      "id": 5, "location": "stall", "characters": [], "shot_size": "INSERT", "camera": "push_in",
+      "visual": "a worn leather sales ledger on the stall counter, open to a page with a single big hand-drawn zero circled",
+      "motion": "the page corner flutters in the hot wind",
+      "narration": "Umbrellas sold this year? Zero."
+    },
+    {
+      "id": 6, "location": "main_street", "characters": ["walt"], "shot_size": "WIDE", "camera": "crane_down",
+      "visual": "dusk; Walt stands at the foot of the giant rusty water tower, staring up at it, tiny next to it",
+      "motion": "camera cranes down from the top of the tower to Walt; his eyebrows slowly rise",
+      "narration": "Then one evening, he looks up at the town water tower."
+    },
+    {
+      "id": 7, "location": "tower_night", "characters": ["walt"], "shot_size": "POV", "camera": "handheld_pov",
+      "visual": "first-person POV climbing the ladder at night, Walt's cartoon hands gripping the rungs, a wrench in his back pocket visible, the tower top above",
+      "motion": "hands climb rung over rung, slight sway, stars above",
+      "narration": "And he has an idea."
+    },
+    {
+      "id": 8, "location": "tower_night", "characters": ["walt"], "shot_size": "MEDIUM", "camera": "orbit",
+      "visual": "Walt on the catwalk with both hands on the huge iron valve wheel, a sly grin",
+      "motion": "Walt heaves and the wheel starts turning; a squeal of rust; moonlight glints",
+      "narration": "At exactly eight a.m., right as the morning crowd walks by..."
+    },
+    {
+      "id": 9, "location": "main_street", "characters": ["townsfolk"], "shot_size": "WIDE", "camera": "pull_out",
+      "visual": "morning; a sheet of water pours from the water tower over Main Street only; townsfolk drenched mid-step, shocked faces, the rest of town bone dry",
+      "motion": "water cascades and splashes, townsfolk jump with wide eyes, puddles spread",
+      "narration": "...it rains. On Main Street. Only on Main Street."
+    },
+    {
+      "id": 10, "location": "stall", "characters": ["walt"], "shot_size": "MEDIUM", "camera": "push_in",
+      "visual": "Walt pops open a bright red umbrella at his stall, perfectly dry, big satisfied grin, rain falling around him",
+      "motion": "the umbrella snaps open with a bounce; Walt raises one finger like a salesman",
+      "narration": "Umbrellas. Five dollars."
+    },
+    {
+      "id": 11, "location": "stall", "characters": ["walt", "townsfolk"], "shot_size": "WIDE", "camera": "track",
+      "visual": "a long queue of soaked townsfolk lines up at the stall, Walt handing out umbrellas and taking cash",
+      "motion": "the queue shuffles forward, umbrellas pop open one after another down the line",
+      "narration": "He sells out in nine minutes."
+    },
+    {
+      "id": 12, "location": "main_street", "characters": ["walt"], "shot_size": "EST", "camera": "fly_through",
+      "visual": "Main Street from above, a colourful river of open umbrellas moving down the street under the tower's waterfall",
+      "motion": "camera flies forward over the umbrellas; they bob as people walk",
+      "narration": "He does it again on Tuesday. And Wednesday. And Thursday."
+    },
+    {
+      "id": 13, "location": "main_street", "characters": ["sheriff"], "shot_size": "MEDIUM", "camera": "push_in",
+      "visual": "the sheriff stands under the water tower, sunglasses tilted down, tapping the hollow tank with a knuckle, a clipboard in his other hand",
+      "motion": "knock knock - the tank booms hollow; the sheriff lowers his sunglasses slowly",
+      "narration": "By Friday, the sheriff notices the water tower is completely empty."
+    },
+    {
+      "id": 14, "location": "stall", "characters": ["walt"], "shot_size": "CLOSE", "camera": "static",
+      "visual": "Walt behind the empty stall, a single sweat drop on his forehead, eyes darting sideways",
+      "motion": "the sweat drop slides down; Walt's eyes dart left then right",
+      "narration": "Walt is in a lot of trouble."
+    },
+    {
+      "id": 15, "location": "sky", "characters": [], "shot_size": "EST", "camera": "pull_out",
+      "visual": "for the first time, enormous dark storm clouds roll over the desert town, a flash of lightning",
+      "motion": "clouds billow and roll in fast, lightning flickers, the first real raindrops fall",
+      "narration": "And then, for the first time in forty-one years, it actually rains."
+    },
+    {
+      "id": 16, "location": "stall", "characters": ["walt"], "shot_size": "MEDIUM", "camera": "push_in",
+      "visual": "Walt stands soaking wet beside his completely empty umbrella barrel in a real downpour, hat drooping, deadpan",
+      "motion": "rain hammers down, Walt's hat brim droops and pours water, he blinks once",
+      "narration": "Walt sold every umbrella he had."
+    },
+    {
+      "id": 17, "location": "stall", "characters": ["walt"], "shot_size": "CLOSE", "camera": "static",
+      "visual": "close-up of Walt, drenched, holding the bare metal skeleton of an umbrella with no canopy over his head",
+      "motion": "water drips through the empty frame onto his face; he sighs",
+      "narration": "Including his own.",
+      "hold": 2.5
+    }
+  ]
+}
