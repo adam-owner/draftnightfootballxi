@@ -239,7 +239,8 @@ def phone_frame(cv, W, H, t, shake=0.0, bg=None):
         bg()
     cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 120))
     sx = math.sin(t * 90) * 6 * shake
-    cv.save(); cv.translate(sx, 0); cv.rotate(-2 + math.sin(t * 0.8) * 0.6)
+    cv.save()  # balanced by end_phone()
+    cv.translate(sx, 0); cv.rotate(-2 + math.sin(t * 0.8) * 0.6)
     body = skia.Rect.MakeLTRB(W * 0.07, H * 0.1, W * 0.93, H * 0.98)
     soft_shadow(cv, W / 2, H * 0.98, W * 0.5, 40, 160)
     cv.drawRoundRect(body, 60, 60, fill((24, 24, 28)))
@@ -255,6 +256,10 @@ def phone_frame(cv, W, H, t, shake=0.0, bg=None):
     return scr, sx
 
 
+def end_phone(cv):
+    cv.restore()
+
+
 def lock_screen(cv, W, H, t, T, shot):
     def bg():
         cv.drawRect(skia.Rect.MakeWH(W, H), fill(BLUE_NIGHT))
@@ -268,6 +273,7 @@ def lock_screen(cv, W, H, t, T, shot):
     # battery low
     text(cv, "3%", scr.right() - 60, scr.top() + 32, 22, (255, 80, 80), 255, "semi", "right")
     cv.restore()
+    end_phone(cv)
 
 
 def messages(cv, W, H, t, T, shot):
@@ -327,6 +333,7 @@ def messages(cv, W, H, t, T, shot):
     cv.drawRoundRect(bar, 25, 25, stroke((70, 70, 78), 2))
     text(cv, "iMessage", bar.left() + 24, bar.centerY() + 9, 24, (110, 110, 120), 255, "reg")
     cv.restore()
+    end_phone(cv)
     if unknown:
         cv.drawRect(skia.Rect.MakeWH(W, H), fill((120, 0, 0), 30 + 20 * math.sin(t * 3)))
 
@@ -363,6 +370,7 @@ def call_screen(cv, W, H, t, T, shot):
             x = scr.left() + 90 + k * ((scr.width() - 180) / 29)
             cv.drawPath(path([(x, cy + 300 - hgt), (x, cy + 300 + hgt)]), stroke((240, 120, 150), 5))
     cv.restore()
+    end_phone(cv)
 
 
 # ============================================================ SHOTS

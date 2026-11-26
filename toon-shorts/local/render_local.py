@@ -112,7 +112,10 @@ def render_shot(args):
     for i in range(n):
         cv = surf.getCanvas()
         cv.clear(skia.ColorBLACK)
+        n0 = cv.save()
         _call(fn, cv, i / FPS, T, shot)
+        cv.restoreToCount(n0)
+        cv.resetMatrix()
         arr = surf.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType)
         ff.stdin.write(arr.tobytes())
     ff.stdin.close()
