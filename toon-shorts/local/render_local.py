@@ -23,38 +23,64 @@ sys.path.insert(0, os.path.join(HERE, "..", "scripts"))
 import skia  # noqa: E402
 
 W, H, FPS = 720, 1280, 30
-FILMS = {"fog-keeper": "film_fogkeeper"}
+FILMS = {"fog-keeper": "film_fogkeeper", "school-texted-back": "film_school"}
 
 
 def film_for(doc):
     return importlib.import_module(FILMS[doc["project"]])
 
 
+def _probe(p):
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", p],
+                         capture_output=True, text=True).stdout
+    return float(out)
+
+
 def tts(doc, adir, voice):
-    from kokoro_onnx import Kokoro
+    """One narration file per shot. Shots may hold several `lines` with different speakers."""
+    import numpy as np
     import soundfile as sf
+    from kokoro_onnx import Kokoro
     mdir = os.environ.get("KOKORO_DIR", os.path.join(HERE, "models"))
     k = Kokoro(os.path.join(mdir, "kokoro-v1.0.int8.onnx"), os.path.join(mdir, "voices-v1.0.bin"))
-    speed = float(doc.get("voice", {}).get("local_speed", 0.97))
+    voices = doc.get("voices") or {"narrator": {"kokoro": voice, "speed": doc.get("voice", {}).get("local_speed", 0.97)}}
+    trim = ("silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
+            "silenceremove=start_periods=1:start_threshold=-45dB,areverse")
     for s in doc["shots"]:
-        wav = os.path.join(adir, f"narr_{s['id']}.wav")
+        lines = s.get("lines") or [{"who": "narrator", "text": s["narration"]}]
         mp3 = os.path.join(adir, f"narr_{s['id']}.mp3")
-        if not os.path.exists(mp3):
-            text = s["narration"].replace("...", ", ").strip(" ,")
-            samples, sr = k.create(text, voice=voice, speed=speed, lang="en-us")
-            sf.write(wav, samples, sr)
-            # trim edge silence, light warmth + compression
-            subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", wav, "-af",
-                            "silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
-                            "silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
-                            "bass=g=2:f=150,acompressor=threshold=-18dB:ratio=3",
-                            "-ar", "44100", "-b:a", "192k", mp3], check=True)
+        meta = os.path.join(adir, f"narr_{s['id']}.json")
+        if os.path.exists(mp3) and os.path.exists(meta):
+            with open(meta) as f:
+                s["line_times"] = json.load(f)
+        else:
+            parts, times, t = [], [], 0.0
+            for i, ln in enumerate(lines):
+                vc = voices.get(ln["who"], voices.get("narrator"))
+                txt = ln["text"].replace("...", ", ").replace("…", ", ").strip(" ,")
+                samples, sr = k.create(txt, voice=vc["kokoro"], speed=float(vc.get("speed", 1.0)), lang="en-us")
+                raw = os.path.join(adir, f"_l{s['id']}_{i}.wav"); done = raw + ".fx.wav"
+                sf.write(raw, samples, sr)
+                af = trim + ",bass=g=2:f=150,acompressor=threshold=-18dB:ratio=3"
+                if vc.get("fx"):
+                    af += "," + vc["fx"]
+                subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af", af, "-ar", "44100", "-ac", "1", done], check=True)
+                y, _ = sf.read(done)
+                os.remove(raw); os.remove(done)
+                pre = float(ln.get("delay", 0.0)) + (0.35 if i else 0.0)
+                parts.append(np.zeros(int(pre * 44100))); t += pre
+                times.append([round(t, 3), round(t + len(y) / 44100, 3), ln["who"], ln.get("bubble")])
+                parts.append(y); t += len(y) / 44100
+            wav = os.path.join(adir, f"narr_{s['id']}.wav")
+            sf.write(wav, np.concatenate(parts), 44100)
+            subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", wav, "-b:a", "192k", mp3], check=True)
             os.remove(wav)
+            with open(meta, "w") as f:
+                json.dump(times, f)
+            s["line_times"] = times
         s["audio_path"] = mp3
-        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", mp3],
-                             capture_output=True, text=True).stdout
-        s["audio_duration"] = float(out)
-        print(f"[narr {s['id']}] {s['audio_duration']:.2f}s  {s['narration']}")
+        s["audio_duration"] = _probe(mp3)
+        print(f"[narr {s['id']}] {s['audio_duration']:.2f}s  " + " / ".join(l["who"] for l in lines))
 
 
 def shot_len(doc, s):
@@ -63,12 +89,21 @@ def shot_len(doc, s):
                      float(mix.get("min_shot", 1.5))), 3)
 
 
+def _call(fn, cv, t, T, shot):
+    import inspect
+    if len(inspect.signature(fn).parameters) >= 6:
+        fn(cv, W, H, t, T, shot)
+    else:
+        fn(cv, W, H, t, T)
+
+
 def render_shot(args):
     project, sid, T, out = args
     with open(os.path.join(project, "story.json")) as f:
         doc = json.load(f)
     film = film_for(doc)
     fn = film.SHOTS[sid]
+    shot = next(x for x in doc["shots"] if x["id"] == sid)
     n = int(round(T * FPS))
     ff = subprocess.Popen(["ffmpeg", "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{W}x{H}",
                            "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "16",
@@ -77,7 +112,7 @@ def render_shot(args):
     for i in range(n):
         cv = surf.getCanvas()
         cv.clear(skia.ColorBLACK)
-        fn(cv, W, H, i / FPS, T)
+        _call(fn, cv, i / FPS, T, shot)
         arr = surf.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType)
         ff.stdin.write(arr.tobytes())
     ff.stdin.close()
@@ -100,7 +135,9 @@ def main():
         surf = skia.Surface(W, H)
         for s in doc["shots"]:
             cv = surf.getCanvas(); cv.clear(skia.ColorBLACK)
-            film.SHOTS[s["id"]](cv, W, H, 1.6, 3.2)
+            T = float(s.get("preview_T", 4.0))
+            s.setdefault("line_times", [[0.3 + i * 0.4, 0.6 + i * 0.4, l["who"], l.get("bubble")] for i, l in enumerate(s.get("lines", []))])
+            _call(film.SHOTS[s["id"]], cv, T * float(s.get("preview_u", 0.6)), T, s)
             surf.makeImageSnapshot().save(os.path.join(pdir, f"p{s['id']:02d}.png"), skia.kPNG)
         print("previews ->", pdir)
         return
@@ -111,8 +148,18 @@ def main():
     total = sum(shot_len(doc, s) for s in doc["shots"])
 
     if doc.get("music") and not os.path.exists(os.path.join(adir, "bgm.mp3")):
-        import music_local
-        wav = music_local.render(os.path.join(adir, "bgm.wav"), total + 1)
+        wav = os.path.join(adir, "bgm.wav")
+        if hasattr(film, "make_music"):
+            timeline, t0 = [], 0.0
+            for s in doc["shots"]:
+                d = shot_len(doc, s)
+                timeline.append({"id": s["id"], "start": t0, "dur": d, "sfx": s.get("sfx", []),
+                                 "line_times": s.get("line_times", [])})
+                t0 += d
+            film.make_music(wav, total, timeline)
+        else:
+            import music_local
+            music_local.render(wav, total + 1)
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", wav, "-b:a", "192k", os.path.join(adir, "bgm.mp3")], check=True)
         os.remove(wav)
         print(f"[bgm] {total + 1:.1f}s")

@@ -1,0 +1,322 @@
+{
+  "project": "school-texted-back",
+  "title": "The School That Texted Back",
+  "format": "interactive",
+  "aspect": "9:16",
+  "mood": "cold moonlit blue, buzzing fluorescent flicker, red exit-sign glow, dread",
+  "voices": {
+    "narrator": {
+      "kokoro": "am_michael",
+      "speed": 0.9,
+      "fx": "aecho=0.7:0.6:40:0.18"
+    },
+    "mom": {
+      "kokoro": "af_heart",
+      "speed": 1.0,
+      "fx": "highpass=f=300,lowpass=f=3400,aecho=0.6:0.5:20:0.1"
+    },
+    "mom_live": {
+      "kokoro": "af_heart",
+      "speed": 0.92
+    },
+    "adam": {
+      "kokoro": "am_puck",
+      "speed": 0.95
+    },
+    "double": {
+      "kokoro": "am_puck",
+      "speed": 0.78,
+      "fx": "asetrate=44100*0.86,aresample=44100,aecho=0.8:0.85:90|180:0.45|0.3,lowpass=f=5000"
+    }
+  },
+  "music": "horror drone: low detuned sine bed, dissonant string cluster swells, ticking clock, heartbeat during the reveal, stingers on each shock",
+  "mix": {
+    "voice": 1.0,
+    "music": 0.32,
+    "gap": 0.25,
+    "lufs": -15,
+    "duck_ratio": 3
+  },
+  "characters": {
+    "adam": "the student (you): messy brown hair, half-lidded tired eyes; navy school blazer with a white collar and red-striped tie as the bean torso; grey backpack",
+    "double": "something wearing Adam's exact uniform and hair, always seen from behind or with no face; stands too still",
+    "mom": "Adam's mum at home: dark curly hair in a loose bun, worried eyebrows; soft pink dressing-gown torso; holds her phone"
+  },
+  "locations": {
+    "classroom": "dark classroom at night: rows of desks, moonlight through tall windows, a wall clock, chalkboard",
+    "hallway": "long school hallway: lockers on both sides, every classroom door open, fluorescent tubes flickering, wall clocks, a red exit sign, stairs at the far end",
+    "home": "Adam's house upstairs landing at night: his closed bedroom door with light under it, family photos, a nightlight",
+    "phone": "Adam's phone screen, dark mode messages app"
+  },
+  "shots": [
+    {
+      "id": 1,
+      "location": "classroom",
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "POV. You're the last student at school. It's eleven forty-seven PM."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "location": "classroom",
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "You wake up with your head on your desk. The classroom is completely dark."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "location": "phone",
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "Your phone says eleven forty-seven. You don't remember falling asleep."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "location": "classroom",
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "You grab your backpack and walk to the door. But something feels wrong."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "location": "hallway",
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "Every classroom door is open."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "location": "hallway",
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "And all the clocks in the hallway show eleven forty-seven."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "location": "phone",
+      "sfx": [
+        "buzz"
+      ],
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "Suddenly, your phone vibrates."
+        },
+        {
+          "who": "mom",
+          "text": "Adam, are you asleep? I'm outside your bedroom. Open the door.",
+          "bubble": "Adam, are you asleep? I'm outside your bedroom. Open the door."
+        },
+        {
+          "who": "mom",
+          "text": "Why aren't you answering?",
+          "bubble": "Why aren't you answering?"
+        },
+        {
+          "who": "mom",
+          "text": "I'm getting worried. I can hear you walking around.",
+          "bubble": "I'm getting worried. I can hear you walking around."
+        }
+      ],
+      "phone": {
+        "contact": "MOM",
+        "heart": true,
+        "time": "11:48 PM"
+      }
+    },
+    {
+      "id": 8,
+      "location": "hallway",
+      "sfx": [
+        "sting"
+      ],
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "Your blood runs cold. You're not home. You're still at school."
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "location": "phone",
+      "sfx": [
+        "ring"
+      ],
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "You call your mom. She answers after two rings."
+        },
+        {
+          "who": "mom",
+          "text": "Adam? Why are you calling me? You're literally upstairs in your bedroom."
+        }
+      ],
+      "phone": {
+        "contact": "MOM",
+        "heart": true,
+        "call": true
+      }
+    },
+    {
+      "id": 10,
+      "location": "hallway",
+      "lines": [
+        {
+          "who": "adam",
+          "text": "Mom... I'm at school."
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "location": "home",
+      "hold": 5.5,
+      "lines": [
+        {
+          "who": "mom_live",
+          "text": "Adam... don't open your bedroom door.",
+          "delay": 1.6
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "location": "phone",
+      "sfx": [
+        "buzz",
+        "sting"
+      ],
+      "lines": [
+        {
+          "who": "mom",
+          "text": "If you're at school... who just walked past my bedroom?",
+          "bubble": "If you're at school…\nWHO JUST WALKED PAST MY BEDROOM?"
+        }
+      ],
+      "phone": {
+        "contact": "MOM",
+        "heart": true,
+        "time": "11:49 PM",
+        "keep": 3
+      }
+    },
+    {
+      "id": 13,
+      "location": "hallway",
+      "sfx": [
+        "steps"
+      ],
+      "hold": 6.0,
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "You hear footsteps behind you. Slow. Heavy. Coming from the stairs."
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "location": "phone",
+      "sfx": [
+        "buzz"
+      ],
+      "lines": [
+        {
+          "who": "double",
+          "text": "Stop calling your mother. She doesn't know what I look like.",
+          "bubble": "Stop calling your mother. She doesn't know what I look like."
+        }
+      ],
+      "phone": {
+        "contact": "UNKNOWN NUMBER",
+        "time": "11:50 PM"
+      }
+    },
+    {
+      "id": 15,
+      "location": "hallway",
+      "sfx": [
+        "sting"
+      ],
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "You turn around. At the end of the hallway stands someone wearing your school uniform. It's facing the wall."
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "location": "hallway",
+      "sfx": [
+        "heartbeat"
+      ],
+      "hold": 5.0,
+      "lines": [
+        {
+          "who": "double",
+          "text": "Adam. We need to go home.",
+          "delay": 0.8
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "location": "choice",
+      "hold": 9.0,
+      "sfx": [
+        "tick"
+      ],
+      "lines": [
+        {
+          "who": "narrator",
+          "text": "What do you do? Choose carefully. Only two choices let you survive. Comment A, B, or C."
+        }
+      ],
+      "choice": {
+        "title": "WHAT DO YOU DO?",
+        "options": [
+          "A. Run to the security office and lock yourself inside.",
+          "B. Approach the person and ask who it is.",
+          "C. Follow the voice and leave school with it."
+        ],
+        "button": "LOCK IN MY DECISION",
+        "footer": "Only two choices let you survive."
+      }
+    }
+  ],
+  "endings": {
+    "A": {
+      "survive": true,
+      "text": "You sprint to the security office and slam the lock. On the CCTV wall, every camera shows the hallway... empty. Then one screen flickers to your house. The figure is standing on your front porch, facing the door. Your phone buzzes. MOM: 'It's gone. You can come home now.' You stay locked in until sunrise. When the janitor opens the door at 6 AM, every clock in the school starts ticking again."
+    },
+    "B": {
+      "survive": true,
+      "text": "You walk toward it. 'Who are you?' It turns around. It has your face, but its eyes are closed, like it's still asleep. 'I'm the part of you that never woke up.' The lights snap on. It's 7:30 AM. The bell is ringing and your teacher is shaking your shoulder. You fell asleep in class. Your phone shows one message from last night, 11:47 PM, from Mom: 'Thanks for coming home, Adam. Goodnight.'"
+    },
+    "C": {
+      "survive": false,
+      "text": "You follow the voice out of the school, through the dark streets, all the way home. Mom opens the front door. She looks at you. Then at the thing standing beside you. Then she smiles at it, steps aside, and lets it in. The door closes. The porch light goes out. Your phone buzzes one last time. MOM: 'Goodnight, Adam.' You were never the one she was waiting for."
+    }
+  }
+}

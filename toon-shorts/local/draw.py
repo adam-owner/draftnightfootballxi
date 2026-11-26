@@ -136,7 +136,15 @@ CAST = {
                   hair="slick", brows="sly", glasses=False, moustache=None),
     "captain": dict(hat="captain", torso="peacoat", torso_rgb=(30, 42, 78), beard=False,
                     hair=None, brows="thick", glasses=False, moustache=None, stubble=True),
+    "adam": dict(hat=None, torso="blazer", torso_rgb=(34, 44, 80), beard=False,
+                 hair="messy", brows="thin", glasses=False, moustache=None),
+    "double": dict(hat=None, torso="blazer", torso_rgb=(34, 44, 80), beard=False,
+                   hair="messy", brows="thin", glasses=False, moustache=None),
+    "mom": dict(hat=None, torso="robe", torso_rgb=(232, 160, 175), beard=False,
+                hair="bun", brows="thin", glasses=False, moustache=None),
 }
+
+HAIR_RGB = {"messy": (92, 58, 34), "bun": (48, 30, 24), "slick": (25, 22, 24)}
 
 
 class Pose:
@@ -159,6 +167,8 @@ class Pose:
         self.hat_droop = 0.0
         self.wet = 0.0
         self.squash = 0.0
+        self.back = False         # seen from behind: no face
+        self.blank = False        # face with no features (the double)
         self.__dict__.update(kw)
 
 
@@ -247,6 +257,23 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
         for k in range(9):
             if k % 2:
                 cv.drawRect(skia.Rect.MakeLTRB(-1, -2.9 + k * 0.2, 1, -2.9 + (k + 1) * 0.2), fill((250, 245, 240)))
+    elif kind == "blazer":
+        cv.drawPath(path([(-0.42, -2.88), (0, -2.2), (0.42, -2.88)], close=True), fill((245, 245, 242)))
+        if not pose.back:
+            tie = path([(-0.08, -2.75), (0.08, -2.75), (0.13, -2.0), (0, -1.85), (-0.13, -2.0)], close=True)
+            cv.drawPath(tie, fill((180, 30, 40)))
+            for k in range(4):
+                cv.drawPath(path([(-0.12, -2.6 + k * 0.18), (0.12, -2.5 + k * 0.18)]), stroke((240, 200, 80), 0.035))
+            cv.drawPath(path([(-0.42, -2.88), (-0.05, -2.1)]), stroke((20, 26, 50), 0.06))
+            cv.drawPath(path([(0.42, -2.88), (0.05, -2.1)]), stroke((20, 26, 50), 0.06))
+            cv.drawCircle(0.5, -2.2, 0.12, fill((214, 170, 60)))
+        else:
+            cv.drawRect(skia.Rect.MakeLTRB(-1, -2.95, 1, -2.7), fill((34, 44, 80)))
+            cv.drawPath(path([(0, -2.7), (0, -1.15)]), stroke((20, 26, 50), 0.05))
+    elif kind == "robe":
+        cv.drawPath(path([(-0.4, -2.9), (0.15, -1.9), (0.4, -2.9)], close=True), fill((245, 200, 210)))
+        cv.drawRect(skia.Rect.MakeLTRB(-1, -1.85, 1, -1.7), fill((200, 120, 140)))
+        cv.drawPath(path([(-0.4, -2.9), (0.15, -1.9)]), stroke((190, 110, 130), 0.05))
     elif kind == "peacoat":
         for yy in (-2.4, -2.0, -1.6):
             for xx in (-0.25, 0.25):
@@ -263,8 +290,12 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
     cv.drawCircle(0, hy, R, fill(SKIN))
     cv.drawCircle(0.25, hy + 0.3, R * 0.75, rad((0.25, hy + 0.35), 0.9, [((215, 210, 200), 0), ((215, 210, 200), 90)]))
     cv.drawCircle(0, hy, R, stroke(INK, ow))
-    _face(cv, spec, pose, hy)
-    _hat(cv, spec["hat"], hy, pose)
+    if not pose.back and not pose.blank:
+        _face(cv, spec, pose, hy)
+    if spec.get("hair"):
+        _hair(cv, spec["hair"], hy, pose)
+    if spec.get("hat"):
+        _hat(cv, spec["hat"], hy, pose)
 
     arm("r")
     if props:
@@ -389,6 +420,54 @@ def _face(cv, spec, pose, hy):
         p = skia.Path(); p.moveTo(sx, sy - 0.18); p.quadTo(sx + 0.12, sy, sx, sy + 0.06)
         p.quadTo(sx - 0.12, sy, sx, sy - 0.18); p.close()
         cv.drawPath(p, fill((140, 200, 255))); cv.drawPath(p, stroke(INK, 0.03))
+
+
+def _hair(cv, kind, hy, pose):
+    rgb = HAIR_RGB.get(kind, (60, 40, 30))
+    if pose.back:
+        # hair covers the whole back of the head
+        p = skia.Path()
+        p.moveTo(-1.0, hy + 0.1)
+        p.cubicTo(-1.1, hy - 1.35, 1.1, hy - 1.35, 1.0, hy + 0.1)
+        p.quadTo(0.6, hy + 0.55, 0, hy + 0.5)
+        p.quadTo(-0.6, hy + 0.55, -1.0, hy + 0.1)
+        p.close()
+        outlined(cv, p, rgb, 0.085)
+        for xx in (-0.5, -0.15, 0.2, 0.55):
+            cv.drawPath(path([(xx, hy - 0.8), (xx + 0.1, hy + 0.2)]), stroke(tuple(c * 0.75 for c in rgb), 0.04))
+        if kind == "bun":
+            cv.drawCircle(0, hy - 1.05, 0.38, fill(rgb)); cv.drawCircle(0, hy - 1.05, 0.38, stroke(INK, 0.07))
+        return
+    if kind == "messy":
+        p = skia.Path()
+        p.moveTo(-1.0, hy - 0.05)
+        spikes = [(-0.95, hy - 0.65), (-0.7, hy - 0.55), (-0.6, hy - 1.05), (-0.3, hy - 0.8), (-0.1, hy - 1.15),
+                  (0.15, hy - 0.85), (0.4, hy - 1.1), (0.55, hy - 0.75), (0.85, hy - 0.9), (0.8, hy - 0.55),
+                  (1.02, hy - 0.4)]
+        for q in spikes:
+            p.lineTo(*q)
+        p.lineTo(1.0, hy - 0.05)
+        p.quadTo(0.85, hy - 0.45, 0.4, hy - 0.42)
+        p.quadTo(0.0, hy - 0.3, -0.3, hy - 0.5)
+        p.quadTo(-0.7, hy - 0.4, -1.0, hy - 0.05)
+        p.close()
+        outlined(cv, p, rgb, 0.08)
+    elif kind == "bun":
+        cv.drawCircle(0.15, hy - 1.05, 0.42, fill(rgb)); cv.drawCircle(0.15, hy - 1.05, 0.42, stroke(INK, 0.07))
+        p = skia.Path()
+        p.moveTo(-1.02, hy + 0.15)
+        p.cubicTo(-1.15, hy - 1.3, 1.15, hy - 1.3, 1.02, hy + 0.15)
+        p.quadTo(0.85, hy - 0.5, 0.2, hy - 0.55)
+        p.quadTo(-0.6, hy - 0.5, -1.02, hy + 0.15)
+        p.close()
+        outlined(cv, p, rgb, 0.08)
+        for xx in (-0.95, 0.95):
+            cv.drawCircle(xx, hy + 0.05, 0.16, fill(rgb)); cv.drawCircle(xx, hy + 0.05, 0.16, stroke(INK, 0.05))
+    elif kind == "slick":
+        p = skia.Path()
+        p.moveTo(-0.98, hy - 0.2); p.cubicTo(-0.9, hy - 1.2, 0.9, hy - 1.2, 0.98, hy - 0.2)
+        p.quadTo(0.3, hy - 0.75, -0.98, hy - 0.2); p.close()
+        outlined(cv, p, rgb, 0.07)
 
 
 def _hat(cv, kind, hy, pose):
@@ -588,3 +667,43 @@ def bill(cv, x, y, s, rot=0.0):
     cv.drawRect(r, stroke((50, 90, 50), max(1, s * 0.03)))
     cv.drawCircle(0, 0, s * 0.13, stroke((60, 110, 60), max(1, s * 0.03)))
     cv.restore()
+
+
+# ----------------------------------------------------------------------------
+# Text (phone UI, choice cards)
+# ----------------------------------------------------------------------------
+_TF = {}
+
+
+def font(size, weight="bold"):
+    key = (weight, size)
+    if key not in _TF:
+        fam = {"bold": "Inter Display Bold", "semi": "Inter SemiBold", "reg": "Inter", "black": "Inter Display Black"}[weight]
+        tf = skia.Typeface(fam) or skia.Typeface("Inter")
+        _TF[key] = skia.Font(tf, size)
+    return _TF[key]
+
+
+def wrap(txt, f, width):
+    lines = []
+    for para in txt.split("\n"):
+        cur = ""
+        for w in para.split(" "):
+            t = (cur + " " + w).strip()
+            if f.measureText(t) > width and cur:
+                lines.append(cur); cur = w
+            else:
+                cur = t
+        lines.append(cur)
+    return lines
+
+
+def text(cv, s, x, y, size, rgb=(255, 255, 255), a=255, weight="bold", align="left"):
+    f = font(size, weight)
+    w = f.measureText(s)
+    if align == "center":
+        x -= w / 2
+    elif align == "right":
+        x -= w
+    cv.drawString(s, x, y, f, fill(rgb, a))
+    return w

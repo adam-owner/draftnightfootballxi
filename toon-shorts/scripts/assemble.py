@@ -73,7 +73,7 @@ def run(project_dir, _dry=False):
         inputs += ["-stream_loop", "-1", "-i", bgm]
         chains.append(f"[{b}:a]volume={mix.get('music', 0.25)},afade=t=out:st={max(total - 1.5, 0)}:d=1.5[bg]")
         chains.append("[vo]asplit[vo1][vo2]")
-        chains.append("[bg][vo1]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[duck]")
+        chains.append(f"[bg][vo1]sidechaincompress=threshold=0.05:ratio={mix.get('duck_ratio', 8)}:attack=20:release=300[duck]")
         chains.append("[vo2][duck]amix=inputs=2:duration=first:normalize=0[pre]")
     else:
         chains.append("[vo]anull[pre]")
