@@ -141,6 +141,54 @@ def rumble(sec=7.0):
     return x * (t / sec) ** 2.2
 
 
+def _voiced(f0, dur, vowel=(850, 1650, 2900), breath=0.12, seed=0):
+    """Tiny formant synthesiser: a voiced sob with falling pitch and jitter."""
+    t = _t(dur)
+    rng = np.random.default_rng(seed)
+    f = f0 * (1.08 - 0.25 * t / dur) * (1 + 0.03 * rng.standard_normal(len(t)).cumsum() / np.sqrt(np.arange(1, len(t) + 1)))
+    ph = np.cumsum(f) / SR
+    src = (ph % 1.0) * 2 - 1                       # sawtooth glottal source
+    src = src - np.convolve(src, np.ones(6) / 6, mode="same")
+    src += breath * rng.normal(0, 1, len(t))
+    out = np.zeros_like(t)
+    for fc, bw, g in zip(vowel, (90, 120, 180), (1.0, 0.6, 0.3)):   # resonant formants
+        r = math.exp(-math.pi * bw / SR); th = 2 * math.pi * fc / SR
+        a1, a2 = -2 * r * math.cos(th), r * r
+        y = np.zeros_like(src); y1 = y2 = 0.0
+        for i, xv in enumerate(src):
+            yv = xv - a1 * y1 - a2 * y2
+            y[i] = yv; y2, y1 = y1, yv
+        out += g * y / (np.max(np.abs(y)) + 1e-9)
+    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 0.6
+    return out * env
+
+
+def cry(sec):
+    """A child crying: clusters of shaky sobs, then a ragged in-breath, repeated."""
+    out = np.zeros(int(sec * SR))
+    rng = np.random.default_rng(11)
+    t = 0.0
+    k = 0
+    while t < sec - 0.5:
+        for j in range(int(rng.integers(2, 4))):          # sob cluster: "uh-uh-huh"
+            d = rng.uniform(0.18, 0.32)
+            v = _voiced(rng.uniform(360, 430) - j * 25, d, vowel=(rng.uniform(750, 900), 1600, 2800), seed=k)
+            i = int(t * SR); out[i:i + len(v)] += v[: len(out) - i] * (0.9 - 0.15 * j)
+            t += d + rng.uniform(0.04, 0.09); k += 1
+        if rng.random() < 0.6:                             # longer wail
+            d = rng.uniform(0.5, 0.8)
+            v = _voiced(rng.uniform(420, 480), d, vowel=(900, 1300, 2700), breath=0.18, seed=k)
+            i = int(t * SR); out[i:i + len(v)] += v[: len(out) - i] * 0.8
+            t += d; k += 1
+        d = rng.uniform(0.35, 0.5)                         # ragged in-breath (noisy, rising)
+        n = _lp(rng.normal(0, 1, int(d * SR)), 3) * np.linspace(0.1, 1, int(d * SR)) ** 1.5
+        n = _lp(n - _lp(n, 40), 6)
+        i = int(t * SR); out[i:i + len(n)] += n[: len(out) - i] * 0.25
+        t += d + rng.uniform(0.15, 0.35)
+    out = _lp(out, 5)      # soften the top end so it sounds like a voice, not hiss
+    return out / (np.max(np.abs(out)) + 1e-9) * 0.8
+
+
 def heartbeat(sec):
     out = np.zeros(int(sec * SR))
     beat = 0.82
@@ -189,11 +237,13 @@ def render(path_out, total, timeline):
         st, du = s["start"], s["dur"]
         for name in s.get("sfx", []):
             if isinstance(name, dict):
-                fn = {"crack": crack, "sting": sting, "glitch": glitch, "eas": eas, "power_down": power_down}[name["name"]]
+                fn = {"crack": crack, "sting": sting, "glitch": glitch, "eas": eas, "power_down": power_down,
+                      "cry": lambda: cry(max(2.0, du - 0.3))}[name["name"]]
                 ats = name.get("at", [0])
-                if ats == "line_end":   # right after the last voiced or shown line
+                if isinstance(ats, str) and ats.startswith("line_end"):   # after line N (default: last)
                     lts = s.get("line_times") or [[0, 0]]
-                    ats = [lts[-1][1] + 0.05]
+                    idx = int(ats.split(":")[1]) if ":" in ats else -1
+                    ats = [lts[idx][1] + 0.05]
                 for at in ats:
                     add(fx, fn(), st + at, name.get("gain", 0.7))
                 continue

@@ -67,7 +67,8 @@ def skyline(cv, W, H, t, horizon=0.62, dark=0.0, light=0.0, seed=4, scale=1.0):
 
 
 # ============================================================ STREET
-WALKERS = [("inspector", {}), ("mom", {}), ("adam", {"straps": True}), ("rival", {}), ("captain", {}), ("alex", {})]
+WALKERS = [("biz", {}), ("woman", {}), ("adam", {"straps": True}), ("inspector", {}), ("rival", {}), ("biz", {}),
+           ("woman", {}), ("adam", {"straps": True})]
 
 
 def street(cv, cam, W, H, t, frozen=0.0, alert=0.0, seed=2):
@@ -101,66 +102,100 @@ def street(cv, cam, W, H, t, frozen=0.0, alert=0.0, seed=2):
                 f = (k / 10) ** 1.6
                 x = lerp(vx + side * 70, W / 2 + side * W * 1.05, f)
                 cv.drawPath(path([(x, lerp(vy - H * 0.42, -H * 0.4, f)), (x, lerp(vy, H * 1.05, f))]), stroke((70, 72, 80), 1 + 4 * f))
-            # storefront awnings
+            # window rows receding along the facade
+            for k in range(1, 12):
+                yy = -H * 0.4 + k * H * 0.11
+                cv.drawPath(path([(vx + side * 70, lerp(vy - H * 0.42, vy, k / 12)), (W / 2 + side * W * 1.1, yy)]),
+                            stroke((80, 82, 92), 2))
+            # lit shop windows at street level
             for k in range(3):
-                f0, f1 = 0.25 + k * 0.22, 0.38 + k * 0.22
-                a = path([(lerp(vx + side * 70, W / 2 + side * W, f0), lerp(vy, H * 0.95, f0) - 40 * f0),
-                          (lerp(vx + side * 70, W / 2 + side * W, f1), lerp(vy, H * 0.95, f1) - 40 * f1),
-                          (lerp(vx + side * 70, W / 2 + side * W, f1), lerp(vy, H * 0.95, f1) - 160 * f1),
-                          (lerp(vx + side * 70, W / 2 + side * W, f0), lerp(vy, H * 0.95, f0) - 160 * f0)], close=True)
-                cv.drawPath(a, fill(((200, 60, 50), (40, 110, 90), (60, 70, 150))[k]))
+                f0, f1 = 0.3 + k * 0.22, 0.42 + k * 0.22
+                xa, xb = lerp(vx + side * 70, W / 2 + side * W, f0), lerp(vx + side * 70, W / 2 + side * W, f1)
+                ya, yb = lerp(vy, H * 0.95, f0), lerp(vy, H * 0.95, f1)
+                q = path([(xa, ya - 30 * f0), (xb, yb - 30 * f1), (xb, yb - 170 * f1), (xa, ya - 170 * f0)], close=True)
+                cv.drawPath(q, fill((255, 226, 150), 170)); cv.drawPath(q, stroke((50, 50, 56), 3))
         # traffic light
         tl = skia.Rect.MakeXYWH(W * 0.8, H * 0.32, 26, 70)
         cv.drawRect(skia.Rect.MakeXYWH(W * 0.8 + 11, H * 0.32 + 70, 4, 180), fill((40, 40, 44)))
         cv.drawRoundRect(tl, 6, 6, fill((30, 30, 34)))
         cv.drawCircle(tl.centerX(), tl.top() + 16, 8, fill((240, 60, 50) if frozen else (60, 30, 30)))
         cv.drawCircle(tl.centerX(), tl.bottom() - 16, 8, fill((60, 220, 120) if not frozen else (30, 60, 40)))
-    # cabs
-    for k in range(3):
-        f = ((k / 3) + (0 if frozen else t * 0.12)) % 1 if not frozen else (k / 3 + 0.15)
-        f = 0.15 + 0.7 * f
-        y = lerp(vy, H * 1.0, f ** 1.5)
-        x = lerp(vx, vx + (90 if k % 2 else -90), f ** 1.5) + (W * 0.12 if k % 2 else -W * 0.12) * f
-        s = 0.15 + 1.1 * f ** 1.5
-        with cam.layer(cv, 0.6):
-            cab(cv, x, y, s)
-    # pedestrians on both sidewalks
-    rnd = random.Random(seed)
-    with cam.layer(cv, 0.9):
-        for i in range(9):
-            f = 0.3 + 0.6 * ((i * 0.37) % 1)
-            side = -1 if i % 2 else 1
+    # --- moving things, drawn far-to-near so nearer ones overlap farther ones
+    items = []
+    # cabs: lane 0 comes toward camera, lane 1 drives away (f = depth 0 far .. 1 near)
+    for k in range(6):
+        lane = k % 2
+        speed = 0.32 if lane == 0 else 0.22
+        ph = (k // 2) / 3 + lane * 0.17
+        f = (ph + (t * speed if lane == 0 else -t * speed)) % 1.0
+        items.append((f, "cab", lane, k))
+    # pedestrians on both sidewalks, walking toward (dir=+1) or away (dir=-1)
+    for i in range(12):
+        side = -1 if i % 2 else 1
+        d = 1 if (i // 2) % 2 == 0 else -1
+        speed = 0.05 + 0.02 * ((i * 7) % 3)
+        f = (0.25 + ((i * 0.29) % 1) * 1.35 + d * t * speed - 0.25) % 1.35 + 0.25   # 0.25 .. 1.6, wraps off-screen
+        items.append((f, "ped", side, i, d))
+    items.sort(key=lambda it: it[0])
+    for it in items:
+        f = it[0]
+        if it[1] == "cab":
+            _, _, lane, k = it
+            g = f ** 1.6
+            y = lerp(vy, H * 1.12, g)
+            off = (-1 if lane == 0 else 1) * lerp(14, W * 0.24, g)
+            with cam.layer(cv, 0.6):
+                cab(cv, vx + off, y, 0.12 + 1.25 * g, away=(lane == 1))
+        else:
+            _, _, side, i, d = it
+            if f > 1.55:
+                continue
             who, extra = WALKERS[i % len(WALKERS)]
-            x = W / 2 + side * lerp(80, W * 0.68, f)
-            y = lerp(vy, H * 1.02, f)
-            ph = rnd.uniform(0, 6)
-            walk = None if frozen else t * 7 + ph
-            look = (0, 0.9) if frozen else (side * -0.5, 0)
+            x = W / 2 + side * lerp(70, W * 0.72, (f - 0.25) / 1.0)
+            y = lerp(vy, H * 1.02, (f - 0.25) / 0.85)
+            ph = i * 1.3
+            walk = None if frozen else t * 7.5 + ph
             def phone(cv_, p, a=alert):
                 r = skia.Rect.MakeLTRB(0.35, -2.9, 0.85, -2.1)
                 cv_.drawRoundRect(r, 0.08, 0.08, fill((20, 20, 24)))
                 if a > 0:
                     cv_.drawRect(r.makeInset(0.05, 0.07), fill(RED))
                     glow(cv_, r.centerX(), r.centerY(), 0.9, RED, 140 * a)
-            p = Pose(walk=walk, bob=abs(math.sin(walk)) * 0.08 if walk else 0, eyes="wide" if frozen else "dot",
-                     mouth="open" if frozen > 0.5 else "flat", look=look, hand_r=(0.6, -2.5) if frozen else (1.25, -1.6), **extra)
-            draw_character(cv, who, x, y, 10 + 46 * f, p, flip=side < 0, props=[phone] if frozen or alert else None)
+            away = d < 0 and not frozen
+            p = Pose(walk=walk, bob=abs(math.sin(walk)) * 0.08 if walk else 0, back=away,
+                     eyes="wide" if frozen else "dot", mouth="open" if frozen > 0.5 else "flat",
+                     look=(0, 0.9) if frozen else (side * -0.4, 0),
+                     hand_r=(0.6, -2.5) if frozen else (1.2, -1.6 + (0.25 * math.sin(walk) if walk else 0)),
+                     hand_l=(-1.2, -1.6 - (0.25 * math.sin(walk) if walk else 0)), **extra)
+            with cam.layer(cv, 0.9):
+                draw_character(cv, who, x, y, 8 + 50 * min(f, 1.4), p, flip=side < 0, props=[phone] if frozen or alert else None)
     if alert:
         cv.drawRect(skia.Rect.MakeWH(W, H), fill(RED, 50 * alert * alarm(t)))
 
 
-def cab(cv, x, y, s):
+def cab(cv, x, y, s, away=False):
     cv.save(); cv.translate(x, y); cv.scale(s, s)
     soft_shadow(cv, 0, 0, 70, 10, 120)
     body = skia.Rect.MakeLTRB(-60, -70, 60, -12)
     cv.drawRoundRect(body, 14, 14, fill((245, 196, 40))); cv.drawRoundRect(body, 14, 14, stroke(INK, 3))
     cv.drawRoundRect(skia.Rect.MakeLTRB(-44, -104, 44, -68), 12, 12, fill((245, 196, 40)))
+    cv.drawRoundRect(skia.Rect.MakeLTRB(-44, -104, 44, -68), 12, 12, stroke(INK, 3))
     cv.drawRoundRect(skia.Rect.MakeLTRB(-38, -98, 38, -72), 8, 8, fill((70, 90, 110)))
     cv.drawRect(skia.Rect.MakeLTRB(-14, -114, 14, -104), fill((250, 250, 240)))
+    cv.drawRect(skia.Rect.MakeLTRB(-60, -40, 60, -32), fill((30, 30, 30)))   # checker stripe
+    for k in range(10):
+        if k % 2:
+            cv.drawRect(skia.Rect.MakeLTRB(-60 + k * 12, -40, -48 + k * 12, -32), fill((250, 250, 240)))
     for wx in (-40, 40):
         cv.drawCircle(wx, -12, 14, fill((30, 30, 32)))
+        cv.drawCircle(wx, -12, 6, fill((120, 120, 126)))
     for hx in (-46, 46):
-        cv.drawCircle(hx, -40, 7, fill((255, 245, 200)))
+        if away:
+            cv.drawRect(skia.Rect.MakeXYWH(hx - 8, -50, 16, 10), fill((230, 40, 40)))
+            glow(cv, hx, -45, 24, (255, 40, 40), 120)
+        else:
+            cv.drawCircle(hx, -50, 8, fill((255, 245, 200)))
+            glow(cv, hx, -50, 30, (255, 240, 200), 90)
     cv.restore()
 
 
@@ -209,7 +244,10 @@ def times_square(cv, cam, W, H, t, mode="ads", glitch=0.0, frozen=1.0):
                 who = WALKERS[(k + row) % len(WALKERS)][0]
                 x = W * (k / 8) + cr.uniform(-30, 30)
                 y = H * (0.86 + row * 0.08)
-                p = Pose(eyes="wide", mouth="open" if cr.random() < 0.4 else "flat", look=(0, -1), brow=0.8)
+                ph = cr.uniform(0, 6)
+                p = Pose(eyes="wide", mouth="open" if cr.random() < 0.4 else "flat",
+                         look=(0.5 * math.sin(t * 0.9 + ph), -1), brow=0.8, bob=0.05 * math.sin(t * 2.2 + ph),
+                         lean=3 * math.sin(t * 0.7 + ph), blink=1.0 if (t + ph) % 3.3 < 0.12 else 0.0)
                 draw_character(cv, who, x, y + 60, 22 + row * 9, p)
     if mode == "alert":
         cv.drawRect(skia.Rect.MakeWH(W, H), fill(RED, 60 * alarm(t)))
@@ -539,7 +577,11 @@ def s14(cv, W, H, t, T, shot):
         draw_character(cv, "sister", W * 0.66, H * 0.92, 64,
                        Pose(sit=True, eyes="closed", mouth="open" if sob > 0.5 else "frown", tears=clamp01(u * 1.5), brow=1.2,
                             bob=sob * 0.06, hand_l=(-0.5, -3.3), hand_r=(0.5, -3.3)))
-        draw_character(cv, "alex", W * 0.3, H * 0.98, 80, Pose(eyes="wide", brow=1.0, mouth="frown", look=(1, 0.3)))
+        talk = speaking(shot, t, "alex")
+        draw_character(cv, "alex", W * 0.3, H * 0.98, 80,
+                       Pose(eyes="half" if talk else "wide", brow=0.6 if talk else 1.0, look=(1, 0.3),
+                            mouth=("open" if math.sin(t * 16) > 0 else "smile") if talk else "frown",
+                            hand_r=(1.6, -2.3) if talk else (1.25, -1.6)))
     grain_vignette(cv, W, H, 180)
 
 
@@ -556,8 +598,16 @@ def s20(cv, W, H, t, T, shot):
     cam = Cam(W, H, zoom=lerp(1.05, 1.12, u), cy=H * 0.55)
     apartment(cv, cam, W, H, t, lights=lights, dark_city=0.0 if t < off else 1.0)
     with cam.layer(cv, 1.0):
-        draw_character(cv, "alex", W * 0.36, H * 0.94, 86, Pose(eyes="wide", brow=1.2, mouth="open" if lights < 0.5 else "flat", look=(0.4, -0.6)))
-        draw_character(cv, "sister", W * 0.66, H * 0.92, 54, Pose(eyes="wide", brow=1.0, mouth="open", look=(-0.6, -0.4)))
+        a_talk, s_talk = speaking(shot, t, "alex"), speaking(shot, t, "sister")
+        flap = math.sin(t * 16) > 0
+        draw_character(cv, "alex", W * 0.36, H * 0.94, 86,
+                       Pose(eyes="wide", brow=1.2, look=(0.8, 0.2) if a_talk else (0.4, -0.6),
+                            mouth=("open" if flap else "flat") if a_talk else ("open" if lights < 0.5 else "flat"),
+                            hand_r=(1.7, -2.2) if a_talk else (1.25, -1.6)))
+        draw_character(cv, "sister", W * 0.66, H * 0.92, 54,
+                       Pose(eyes="closed" if s_talk else "wide", brow=1.2, tears=0.8 if t > (shot.get("line_times") or [[0]])[0][0] else 0,
+                            mouth=("open" if flap else "frown") if s_talk else "open", look=(-0.6, -0.4),
+                            bob=0.05 * abs(math.sin(t * 5)), hand_l=(-0.5, -3.3) if s_talk else (-1.25, -1.6)))
     grain_vignette(cv, W, H, 200)
 
 

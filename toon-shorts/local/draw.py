@@ -149,12 +149,16 @@ CAST = {
 }
 
 CAST.update({
-    "alex": dict(hat=None, torso="hoodie", torso_rgb=(120, 124, 132), beard=False, hair="messy",
+    "alex": dict(hat=None, torso="hoodie", torso_rgb=(120, 124, 132), beard=False, hair="swoop",
                  hair_rgb=(28, 24, 26), brows="thick", glasses=False, moustache=None),
     "sister": dict(hat=None, torso="dress", torso_rgb=(244, 200, 60), beard=False, hair="pigtails",
                    hair_rgb=(110, 66, 36), brows="thin", glasses=False, moustache=None),
     "reporter": dict(hat=None, torso="suit", torso_rgb=(196, 36, 44), beard=False, hair="bob",
                      hair_rgb=(60, 36, 24), brows="thin", glasses=False, moustache=None),
+    "biz": dict(hat=None, torso="suit", torso_rgb=(70, 76, 90), beard=False, hair="slick",
+                hair_rgb=(40, 32, 28), brows="thick", glasses=False, moustache=None),
+    "woman": dict(hat=None, torso="coat", torso_rgb=(40, 140, 140), beard=False, hair="bob",
+                  hair_rgb=(220, 180, 90), brows="thin", glasses=False, moustache=None),
 })
 
 HAIR_RGB = {"messy": (92, 58, 34), "bun": (48, 30, 24), "slick": (25, 22, 24)}
@@ -188,6 +192,10 @@ class Pose:
         self.straps = False       # backpack straps over the shoulders
         self.tears = 0.0          # 0..1 tear streams
         self.__dict__.update(kw)
+
+
+def pose_rgb(spec):
+    return spec["torso_rgb"]
 
 
 def _limb(cv, a, b, w, bend=0.0):
@@ -256,6 +264,10 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
     cv.save()
     cv.clipPath(tor, doAntiAlias=True)
     kind = spec["torso"]
+    if pose.back and kind != "blazer":
+        # seen from behind: plain back of the outfit, just a centre seam (no pockets, ties or buttons)
+        cv.drawPath(path([(0, -2.8), (0, -1.15)]), stroke(tuple(int(c * 0.8) for c in trgb), 0.05))
+        kind = "_back"
     if kind == "sweater":
         for xx in (-0.45, -0.15, 0.15, 0.45):
             for k in range(7):
@@ -284,6 +296,12 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
         pocket = skia.Rect.MakeLTRB(-0.45, -1.75, 0.45, -1.35)
         cv.drawRoundRect(pocket, 0.08, 0.08, stroke((95, 98, 106), 0.05))
         cv.drawRect(skia.Rect.MakeLTRB(-1, -1.28, 1, -1.0), fill((100, 104, 112)))
+    elif kind == "coat":
+        cv.drawPath(path([(-0.4, -2.9), (0, -2.35), (0.4, -2.9)], close=True), fill((240, 236, 228)))
+        cv.drawPath(path([(0, -2.35), (0, -1.1)]), stroke(tuple(int(c * 0.7) for c in pose_rgb(spec)), 0.05))
+        for yy in (-2.1, -1.75, -1.4):
+            cv.drawCircle(0.12, yy, 0.05, fill((30, 30, 30)))
+        cv.drawRect(skia.Rect.MakeLTRB(-1, -1.85, 1, -1.72), fill(tuple(int(c * 0.75) for c in pose_rgb(spec))))
     elif kind == "dress":
         cv.drawPath(path([(-0.35, -2.9), (0, -2.55), (0.35, -2.9)], close=True), fill((255, 255, 255)))
         for k in range(4):
@@ -565,13 +583,31 @@ def _hair(cv, kind, hy, pose, rgb=None):
             cv.drawCircle(xx, hy + 0.05, 0.16, fill(rgb)); cv.drawCircle(xx, hy + 0.05, 0.16, stroke(INK, 0.05))
     elif kind == "pigtails":
         for sx in (-1, 1):
-            pt = skia.Path(); pt.addOval(skia.Rect.MakeLTRB(sx * 1.05 - 0.32, hy - 0.2, sx * 1.05 + 0.32, hy + 0.75))
+            cv.save(); cv.translate(sx * 0.98, hy + 0.05); cv.rotate(sx * -18)
+            pt = skia.Path(); pt.moveTo(-0.16, 0); pt.cubicTo(-0.42, 0.35, -0.3, 0.95, 0, 1.12)
+            pt.cubicTo(0.3, 0.95, 0.42, 0.35, 0.16, 0); pt.close()
             outlined(cv, pt, rgb, 0.07)
-            cv.drawCircle(sx * 1.0, hy - 0.15, 0.13, fill((220, 40, 50))); cv.drawCircle(sx * 1.0, hy - 0.15, 0.13, stroke(INK, 0.05))
+            cv.drawPath(path([(0, 0.25), (0, 0.95)]), stroke(tuple(int(c * 0.7) for c in rgb), 0.04))
+            bow = path([(-0.2, -0.12), (0, 0.02), (-0.2, 0.16)], close=True)
+            outlined(cv, bow, (220, 40, 50), 0.04)
+            bow2 = path([(0.2, -0.12), (0, 0.02), (0.2, 0.16)], close=True)
+            outlined(cv, bow2, (220, 40, 50), 0.04)
+            cv.restore()
         p = skia.Path(); p.moveTo(-1.0, hy - 0.05); p.cubicTo(-1.1, hy - 1.3, 1.1, hy - 1.3, 1.0, hy - 0.05)
         p.quadTo(0.6, hy - 0.55, 0.05, hy - 0.62); p.quadTo(-0.6, hy - 0.55, -1.0, hy - 0.05); p.close()
         outlined(cv, p, rgb, 0.08)
         cv.drawPath(path([(0.05, hy - 1.0), (0.05, hy - 0.62)]), stroke(tuple(int(c * 0.7) for c in rgb), 0.05))
+    elif kind == "swoop":
+        # short sides, a fringe swept across the forehead
+        p = skia.Path(); p.moveTo(-1.0, hy - 0.05)
+        p.cubicTo(-1.12, hy - 1.25, 1.12, hy - 1.3, 1.02, hy - 0.15)
+        p.quadTo(0.9, hy - 0.45, 0.55, hy - 0.5)
+        p.quadTo(0.05, hy - 0.45, -0.55, hy - 0.15)
+        p.quadTo(-0.8, hy - 0.05, -0.9, hy + 0.12)
+        p.close()
+        outlined(cv, p, rgb, 0.08)
+        hl = skia.Path(); hl.moveTo(-0.5, hy - 0.85); hl.quadTo(0.1, hy - 1.05, 0.6, hy - 0.8)
+        cv.drawPath(hl, stroke(tuple(min(255, c + 70) for c in rgb), 0.06))
     elif kind == "bob":
         p = skia.Path(); p.moveTo(-1.12, hy + 0.55); p.lineTo(-1.1, hy - 0.2)
         p.cubicTo(-1.15, hy - 1.35, 1.15, hy - 1.35, 1.1, hy - 0.2); p.lineTo(1.12, hy + 0.55)

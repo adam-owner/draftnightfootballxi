@@ -342,7 +342,7 @@ def call_screen(cv, W, H, t, T, shot):
     ph = shot.get("phone", {})
     name = ph.get("contact", "MOM")
     col = tuple(ph.get("color", (240, 120, 150)))
-    lt = [x for x in shot.get("line_times", []) if x[2] != "narrator"]
+    lt = [x for x in shot.get("line_times", []) if x[2] not in ("narrator", "alex", "alex_whisper", "adam", "sister")]
     ans = lt[0][0] if lt else T * 0.5
     dropped = ph.get("drop") and lt and t > lt[-1][1]
     def bg():

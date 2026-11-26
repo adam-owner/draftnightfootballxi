@@ -21,6 +21,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "scripts"))
 
 import skia  # noqa: E402
+import captions  # noqa: E402
 
 W, H, FPS = 720, 1280, 30
 FILMS = {"fog-keeper": "film_fogkeeper", "school-texted-back": "film_school",
@@ -147,6 +148,8 @@ def render_shot(args):
         _call(fn, cv, i / FPS, T, shot)
         cv.restoreToCount(n0)
         cv.resetMatrix()
+        if doc.get("captions") and not shot.get("no_captions"):
+            captions.draw(cv, W, H, i / FPS, shot)
         arr = surf.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType)
         ff.stdin.write(arr.tobytes())
     ff.stdin.close()
@@ -212,7 +215,8 @@ def main():
         T = shot_len(doc, s)
         out = os.path.join(cdir, f"clip_{s['id']}.mp4")
         meta = out[:-4] + ".json"
-        ckey = _key([{k: v for k, v in s.items() if k not in RUNTIME}, s.get("line_times"), T, W, H, FPS])
+        ckey = _key([{k: v for k, v in s.items() if k not in RUNTIME}, s.get("line_times"), T, W, H, FPS,
+                     bool(doc.get("captions"))])
         s["clip_path"] = out
         old = json.load(open(meta)).get("key") if os.path.exists(meta) else None
         if not os.path.exists(out) or old != ckey or s["id"] in redo:
