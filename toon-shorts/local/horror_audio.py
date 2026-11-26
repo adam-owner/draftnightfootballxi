@@ -163,6 +163,14 @@ def _voiced(f0, dur, vowel=(850, 1650, 2900), breath=0.12, seed=0):
     return out * env
 
 
+def _mix(out, sig, i, g=1.0):
+    """Add sig into out starting at sample i, clipped to out's bounds (never errors at the edges)."""
+    if i >= len(out) or i < 0:
+        return
+    j = min(len(out), i + len(sig))
+    out[i:j] += sig[: j - i] * g
+
+
 def cry(sec):
     """A child crying: clusters of shaky sobs, then a ragged in-breath, repeated."""
     out = np.zeros(int(sec * SR))
@@ -173,17 +181,17 @@ def cry(sec):
         for j in range(int(rng.integers(2, 4))):          # sob cluster: "uh-uh-huh"
             d = rng.uniform(0.18, 0.32)
             v = _voiced(rng.uniform(360, 430) - j * 25, d, vowel=(rng.uniform(750, 900), 1600, 2800), seed=k)
-            i = int(t * SR); out[i:i + len(v)] += v[: len(out) - i] * (0.9 - 0.15 * j)
+            _mix(out, v, int(t * SR), 0.9 - 0.15 * j)
             t += d + rng.uniform(0.04, 0.09); k += 1
         if rng.random() < 0.6:                             # longer wail
             d = rng.uniform(0.5, 0.8)
             v = _voiced(rng.uniform(420, 480), d, vowel=(900, 1300, 2700), breath=0.18, seed=k)
-            i = int(t * SR); out[i:i + len(v)] += v[: len(out) - i] * 0.8
+            _mix(out, v, int(t * SR), 0.8)
             t += d; k += 1
         d = rng.uniform(0.35, 0.5)                         # ragged in-breath (noisy, rising)
         n = _lp(rng.normal(0, 1, int(d * SR)), 3) * np.linspace(0.1, 1, int(d * SR)) ** 1.5
         n = _lp(n - _lp(n, 40), 6)
-        i = int(t * SR); out[i:i + len(n)] += n[: len(out) - i] * 0.25
+        _mix(out, n, int(t * SR), 0.25)
         t += d + rng.uniform(0.15, 0.35)
     out = _lp(out, 5)      # soften the top end so it sounds like a voice, not hiss
     return out / (np.max(np.abs(out)) + 1e-9) * 0.8
@@ -212,8 +220,7 @@ def tick(sec):
     for k in range(int(sec)):
         tt = _t(0.04)
         c = _lp(rng.normal(0, 1, len(tt)), 2) * np.exp(-tt * 120) * (0.6 if k % 2 else 0.9)
-        i = int(k * SR)
-        out[i:i + len(c)] += c[: len(out) - i]
+        _mix(out, c, int(k * SR))
     return out
 
 
