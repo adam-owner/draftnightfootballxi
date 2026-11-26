@@ -1,0 +1,254 @@
+{
+  "project": "fog-keeper",
+  "title": "The Lighthouse That Sold Fog",
+  "aspect": "9:16",
+  "mood": "salty seaside, cool blue-grey sea light by day, deep navy night with a warm golden lighthouse beam, playful and mischievous",
+  "voice": {
+    "voice_id": "English_magnetic_voiced_man",
+    "speed": 1.05,
+    "delivery": "calm deadpan storyteller, dry wit, unhurried pace"
+  },
+  "music": "quirky understated sea-shanty instrumental, plucked mandolin, soft accordion, light upright bass, mischievous mood, occasional distant foghorn, loopable",
+  "mix": {
+    "voice": 1.0,
+    "music": 0.22,
+    "gap": 0.15,
+    "lufs": -16
+  },
+  "characters": {
+    "gus": "old lighthouse keeper; yellow fisherman's sou'wester rain hat, big bushy white beard covering the lower face, small dot eyes, bushy white eyebrows; chunky navy cable-knit sweater as the bean-shaped torso; often holds a brass oil lantern",
+    "inspector": "shipping company inspector; small black bowler hat, perfectly round wire glasses, thin neat moustache; grey three-piece suit torso with a red tie; always carries a clipboard",
+    "rival": "the new lighthouse keeper; red knit beanie, slicked black hair, narrow sly eyes, a crooked grin; striped red-and-white sailor shirt torso",
+    "captain": "ship captain; white captain's cap with a gold anchor, grey stubble; navy pea-coat torso with brass buttons"
+  },
+  "locations": {
+    "island": "Gull Rock: a small rocky island in a grey-green bay with a tall red-and-white striped lighthouse, a tiny keeper's cottage, seagulls, crashing waves, a little wooden dock with a rowboat",
+    "lamp_room": "the cozy lamp room at the top of the lighthouse: a giant brass Fresnel lens, brass fittings, round windows looking over the sea, a kettle and a mug on a small table",
+    "theatre": "the dusty backstage of an old closing-down theatre: velvet curtains, stacked props, spotlights, cobwebs, a sale table full of odd stage equipment",
+    "bay_night": "the bay at night: dark navy water, moonlight, distant ship lights, the lighthouse beam sweeping across",
+    "ship_bridge": "the wheelhouse of a small cargo ship at night: wooden ship's wheel, brass compass, rain-streaked windows",
+    "dock_night": "the little wooden dock below the lighthouse at night: lanterns, coiled ropes, crates, mist curling over the water"
+  },
+  "shots": [
+    {
+      "id": 1,
+      "location": "island",
+      "characters": [],
+      "shot_size": "EST",
+      "camera": "fly_through",
+      "visual": "bright clear sunny day; the striped lighthouse on its rocky island in a calm sparkling bay, not a cloud or wisp of fog anywhere",
+      "motion": "camera flies low over the waves toward the island; seagulls circle; waves break on the rocks",
+      "narration": "This man gets paid fifty dollars for every ship that doesn't crash."
+    },
+    {
+      "id": 2,
+      "location": "lamp_room",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "MEDIUM",
+      "camera": "orbit",
+      "visual": "Gus proudly polishing the giant brass lighthouse lens with a rag",
+      "motion": "Gus rubs the lens in big circles; sunlight glints and flares off the glass",
+      "narration": "This is Gus. He keeps the lighthouse on Gull Rock."
+    },
+    {
+      "id": 3,
+      "location": "bay_night",
+      "characters": [],
+      "shot_size": "WIDE",
+      "camera": "pull_out",
+      "visual": "a memory: a ship lost in thick fog turns safely toward the golden lighthouse beam",
+      "motion": "the beam sweeps through the fog; the ship slowly turns toward it; mist drifts",
+      "narration": "When fog rolls in and his light guides a ship home, the company pays him."
+    },
+    {
+      "id": 4,
+      "location": "island",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "WIDE",
+      "camera": "track",
+      "visual": "Gus sits on the rocks under a perfectly clear blue sky, ships sailing past easily in the distance",
+      "motion": "ships glide by; a seagull lands next to Gus; he doesn't move",
+      "narration": "There's just one problem. The fog hasn't come in for ten years."
+    },
+    {
+      "id": 5,
+      "location": "lamp_room",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "CLOSE",
+      "camera": "push_in",
+      "visual": "Gus holding open an empty brown wallet, a single moth inside, deadpan face",
+      "motion": "the moth flutters out of the wallet; Gus blinks slowly",
+      "narration": "No fog. No rescues. No money."
+    },
+    {
+      "id": 6,
+      "location": "theatre",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "MEDIUM",
+      "camera": "push_in",
+      "visual": "Gus at a dusty theatre sale table, eyebrows shooting up as he spots something",
+      "motion": "dust motes float in a spotlight beam; Gus's bushy eyebrows rise; he leans in",
+      "narration": "Then, at a closing-down theatre sale, Gus finds something."
+    },
+    {
+      "id": 7,
+      "location": "theatre",
+      "characters": [],
+      "shot_size": "INSERT",
+      "camera": "push_in",
+      "visual": "a battered old black stage fog machine with a dial and a nozzle, lit dramatically by a spotlight",
+      "motion": "the spotlight flickers on; a small puff of leftover smoke coughs from the nozzle",
+      "narration": "A fog machine."
+    },
+    {
+      "id": 8,
+      "location": "bay_night",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "POV",
+      "camera": "handheld_pov",
+      "visual": "first-person POV rowing a small rowboat at night, Gus's cartoon hands on the oars, the fog machine sitting in the bow, the lighthouse behind",
+      "motion": "oars dip and pull, the boat rocks gently, moonlight on the ripples",
+      "narration": "That night, he rows it out into the middle of the bay..."
+    },
+    {
+      "id": 9,
+      "location": "bay_night",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "CLOSE",
+      "camera": "static",
+      "visual": "Gus's finger on the fog machine's big switch, his eyes narrowed with a sly look",
+      "motion": "click - the switch flips; the machine rumbles and a thick white cloud of fog blasts out",
+      "narration": "...and flips the switch."
+    },
+    {
+      "id": 10,
+      "location": "bay_night",
+      "characters": [],
+      "shot_size": "EST",
+      "camera": "crane_down",
+      "visual": "the whole bay swallowed in thick white fog, only the golden lighthouse beam cutting through it",
+      "motion": "fog rolls and billows across the water; the beam sweeps; distant ship lights blink in confusion",
+      "narration": "By midnight, nobody can see a thing."
+    },
+    {
+      "id": 11,
+      "location": "ship_bridge",
+      "characters": [
+        "captain"
+      ],
+      "shot_size": "MEDIUM",
+      "camera": "push_in",
+      "visual": "the captain gripping the ship's wheel in panic, wide eyes, then the golden beam shines through the window onto his face",
+      "motion": "the captain sweats and spins the wheel; the beam sweeps across; his face melts into relief",
+      "narration": "Captains panic. Then they see the light."
+    },
+    {
+      "id": 12,
+      "location": "lamp_room",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "MEDIUM",
+      "camera": "orbit",
+      "visual": "Gus at the lamp room table counting a growing stack of cash by lantern light, big grin under the beard",
+      "motion": "Gus licks his thumb and flicks bills onto the pile one by one; the beam sweeps behind him",
+      "narration": "Fifty dollars. Fifty dollars. Fifty dollars."
+    },
+    {
+      "id": 13,
+      "location": "dock_night",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "WIDE",
+      "camera": "track",
+      "visual": "Gus loading five fog machines into a now overloaded rowboat that sits low in the water",
+      "motion": "Gus heaves one more machine in; the rowboat dips lower; ropes creak",
+      "narration": "So Gus buys two more machines. Then five."
+    },
+    {
+      "id": 14,
+      "location": "island",
+      "characters": [],
+      "shot_size": "EST",
+      "camera": "pull_out",
+      "visual": "seen from high above: the entire bay buried under a thick ocean of fog, only the tip of the lighthouse poking out",
+      "motion": "camera pulls back and up; fog churns like a sea of cotton; the beam sweeps across the top",
+      "narration": "Soon, it's the foggiest harbor in the country."
+    },
+    {
+      "id": 15,
+      "location": "dock_night",
+      "characters": [
+        "inspector",
+        "gus"
+      ],
+      "shot_size": "WIDE",
+      "camera": "push_in",
+      "visual": "the inspector steps off a boat onto the foggy dock with his clipboard; Gus beside him with a single sweat drop",
+      "motion": "the inspector adjusts his glasses; fog swirls around their legs; Gus's sweat drop slides",
+      "narration": "So the company sends an inspector."
+    },
+    {
+      "id": 16,
+      "location": "dock_night",
+      "characters": [
+        "inspector"
+      ],
+      "shot_size": "CLOSE",
+      "camera": "static",
+      "visual": "the inspector peering into the thick fog, then beaming with delight and scribbling on his clipboard",
+      "motion": "his eyebrows rise above his round glasses; he scribbles fast; his moustache curls up",
+      "narration": "He takes one look at all that fog... and orders a second lighthouse."
+    },
+    {
+      "id": 17,
+      "location": "island",
+      "characters": [
+        "rival"
+      ],
+      "shot_size": "WIDE",
+      "camera": "pull_out",
+      "visual": "a brand-new shiny blue-and-white lighthouse right next to Gus's old one, the rival keeper waving from its balcony",
+      "motion": "the new lighthouse's lamp blinks on for the first time; the rival waves with a crooked grin",
+      "narration": "So they build one. Right next door."
+    },
+    {
+      "id": 18,
+      "location": "dock_night",
+      "characters": [
+        "rival"
+      ],
+      "shot_size": "WIDE",
+      "camera": "track",
+      "visual": "from high in Gus's lighthouse window: the rival keeper tiptoeing down to the dock at night, hugging a fog machine",
+      "motion": "the rival tiptoes in exaggerated sneaky steps, looking left and right",
+      "narration": "That night, Gus sees the new keeper sneaking down to the docks..."
+    },
+    {
+      "id": 19,
+      "location": "lamp_room",
+      "characters": [
+        "gus"
+      ],
+      "shot_size": "CLOSE",
+      "camera": "push_in",
+      "visual": "close-up of Gus at the round window, completely deadpan, one eye twitching",
+      "motion": "slow push-in; Gus's left eye twitches twice; the beam sweeps behind him",
+      "narration": "...carrying a fog machine.",
+      "hold": 2.5
+    }
+  ]
+}
