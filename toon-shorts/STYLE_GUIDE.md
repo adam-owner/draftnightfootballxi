@@ -83,7 +83,7 @@ Style rules:
 - Present tense: "he watches", "he knows", "they attack".
 - Rhetorical questions as pivots: "Why?", "What's happening?"
 - Concrete numbers and props over adjectives.
-- 130-170 words for 60 s.
+- 150-180 words for 60 s (the OCR'd reference scripts run 152-179).
 
 ## 6. Captions
 

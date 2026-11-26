@@ -3,3 +3,4 @@ toon-shorts/out/
 __pycache__/
 *.pyc
 .env
+toon-shorts/local/models/

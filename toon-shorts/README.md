@@ -37,6 +37,27 @@ python3 assemble.py   ../out/my-short   # -> ../out/my-short/final.mp4
   `voice.clone_ref` to a clean 10-30 s recording to clone it.
 - No music: set `"music": null`.
 
+## Offline mode (no API key)
+
+`local/render_local.py` renders a story with no MuAPI calls:
+- **Visuals:** vector-animated shots drawn with skia. Each story needs its own shot
+  scripts, e.g. `local/film_fogkeeper.py`.
+- **Voice:** Kokoro neural TTS, running locally.
+- **Music:** a procedural instrumental bed.
+
+It then runs the normal `assemble.py`.
+
+```bash
+pip install skia-python kokoro-onnx soundfile numpy   # Linux also needs libegl1 libgl1
+# model files from github.com/thewh1teagle/kokoro-onnx/releases (model-files-v1.0):
+#   kokoro-v1.0.int8.onnx, voices-v1.0.bin  ->  toon-shorts/local/models/  (or set KOKORO_DIR)
+python3 local/render_local.py out/fog-keeper --preview   # one still per shot
+python3 local/render_local.py out/fog-keeper             # -> out/fog-keeper/final.mp4
+```
+
+The look is flat 2D. It follows the reference character design, but it is not the
+AI-generated 3D sets of the MuAPI path.
+
 ## story.json
 
 | field | meaning |
