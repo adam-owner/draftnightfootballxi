@@ -293,9 +293,9 @@ def messages(cv, W, H, t, T, shot):
     # header
     hy = scr.top() + 120
     unknown = ph.get("contact", "").startswith("UNKNOWN")
-    cv.drawCircle(W / 2, hy, 40, fill((80, 80, 90) if unknown else (240, 120, 150)))
-    text(cv, "?" if unknown else "M", W / 2, hy + 14, 40, (255, 255, 255), 255, "bold", "center")
+    cv.drawCircle(W / 2, hy, 40, fill((80, 80, 90) if unknown else tuple(ph.get("color", (240, 120, 150)))))
     name = ph.get("contact", "MOM")
+    text(cv, "?" if unknown else name[0], W / 2, hy + 14, 40, (255, 255, 255), 255, "bold", "center")
     w = font(28, "semi").measureText(name)
     text(cv, name, W / 2 - (14 if ph.get("heart") else 0), hy + 80, 28, (255, 255, 255), 255, "semi", "center")
     if ph.get("heart"):
@@ -339,8 +339,12 @@ def messages(cv, W, H, t, T, shot):
 
 
 def call_screen(cv, W, H, t, T, shot):
-    lt = shot.get("line_times", [])
-    ans = lt[1][0] if len(lt) > 1 else T * 0.5
+    ph = shot.get("phone", {})
+    name = ph.get("contact", "MOM")
+    col = tuple(ph.get("color", (240, 120, 150)))
+    lt = [x for x in shot.get("line_times", []) if x[2] != "narrator"]
+    ans = lt[0][0] if lt else T * 0.5
+    dropped = ph.get("drop") and lt and t > lt[-1][1]
     def bg():
         cv.drawRect(skia.Rect.MakeWH(W, H), fill(BLUE_NIGHT))
     scr, _ = phone_frame(cv, W, H, t, bg=bg)
@@ -350,25 +354,28 @@ def call_screen(cv, W, H, t, T, shot):
     if t < ans:
         for k in range(3):
             rr = 90 + ((t * 60 + k * 40) % 120)
-            cv.drawCircle(W / 2, cy, rr, stroke((240, 120, 150), 3, 160 * (1 - (rr - 90) / 120)))
-    cv.drawCircle(W / 2, cy, 90, fill((240, 120, 150)))
-    text(cv, "M", W / 2, cy + 32, 90, (255, 255, 255), 255, "bold", "center")
-    w = font(44, "bold").measureText("MOM")
-    text(cv, "MOM", W / 2 - 16, cy + 170, 44, (255, 255, 255), 255, "bold", "center")
-    heart(cv, W / 2 + w / 2 + 4, cy + 154, 16)
-    status = "calling..." if t < ans else "00:%02d" % int(t - ans)
-    text(cv, status, W / 2, cy + 220, 28, (200, 200, 210), 255, "semi", "center")
+            cv.drawCircle(W / 2, cy, rr, stroke(col, 3, 160 * (1 - (rr - 90) / 120)))
+    cv.drawCircle(W / 2, cy, 90, fill(col))
+    text(cv, name[0], W / 2, cy + 32, 90, (255, 255, 255), 255, "bold", "center")
+    w = font(44, "bold").measureText(name)
+    text(cv, name, W / 2 - (16 if ph.get("heart") else 0), cy + 170, 44, (255, 255, 255), 255, "bold", "center")
+    if ph.get("heart"):
+        heart(cv, W / 2 + w / 2 + 4, cy + 154, 16)
+    if dropped:
+        status, scol = "Call failed", (255, 80, 80)
+    else:
+        status, scol = ("calling..." if t < ans else "00:%02d" % int(t - ans)), (200, 200, 210)
+    text(cv, status, W / 2, cy + 220, 28, scol, 255, "semi", "center")
     by = scr.bottom() - 170
-    for i, (lbl, col) in enumerate((("mute", (60, 60, 70)), ("speaker", (60, 60, 70)), ("end", (230, 50, 50)))):
+    for i, (lbl, c) in enumerate((("mute", (60, 60, 70)), ("speaker", (60, 60, 70)), ("end", (230, 50, 50)))):
         bx = scr.left() + scr.width() * (0.22 + 0.28 * i)
-        cv.drawCircle(bx, by, 46, fill(col))
+        cv.drawCircle(bx, by, 46, fill(c))
         text(cv, lbl, bx, by + 82, 20, (200, 200, 210), 255, "semi", "center")
-    if t >= ans:
-        # voice waveform
+    if ans <= t and not dropped:
         for k in range(30):
             hgt = 8 + 30 * abs(math.sin(t * 12 + k * 0.7)) * abs(math.sin(t * 3.1 + k))
             x = scr.left() + 90 + k * ((scr.width() - 180) / 29)
-            cv.drawPath(path([(x, cy + 300 - hgt), (x, cy + 300 + hgt)]), stroke((240, 120, 150), 5))
+            cv.drawPath(path([(x, cy + 300 - hgt), (x, cy + 300 + hgt)]), stroke(col, 5))
     cv.restore()
     end_phone(cv)
 

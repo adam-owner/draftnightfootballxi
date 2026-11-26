@@ -103,6 +103,44 @@ def crack():
     return x
 
 
+def eas():
+    """Emergency-alert attention tone (853 + 960 Hz) with a chorus of phones."""
+    t = _t(3.2)
+    x = (np.sign(np.sin(2 * math.pi * 853 * t)) + np.sign(np.sin(2 * math.pi * 960 * t))) * 0.25
+    x = _lp(x, 4) * _env(len(t), 0.02, 0.3)
+    rng = np.random.default_rng(4)
+    for k in range(6):   # phones all over the street, slightly out of sync
+        d = int(rng.uniform(0.05, 0.6) * SR)
+        x[d:] += x[: len(x) - d] * 0.25
+    return x * 0.6
+
+
+def glitch():
+    t = _t(0.7)
+    rng = np.random.default_rng(6)
+    x = rng.uniform(-1, 1, len(t)) * (rng.random(len(t)) < 0.3)
+    gate = (np.floor(t * 40) % 3 != 0).astype(float)
+    x = x * gate * np.exp(-t * 3)
+    x += np.sign(np.sin(2 * math.pi * 120 * t)) * 0.3 * np.exp(-t * 6)
+    return x * 0.8
+
+
+def power_down():
+    t = _t(2.2)
+    f = 120 * np.exp(-t * 1.4) + 25
+    x = np.sin(2 * math.pi * np.cumsum(f) / SR) * np.exp(-t * 1.2)
+    clunk = np.sin(2 * math.pi * 50 * t) * np.exp(-t * 20)
+    return x * 0.7 + clunk
+
+
+def rumble(sec=7.0):
+    t = _t(sec)
+    rng = np.random.default_rng(9)
+    x = _lp(rng.normal(0, 1, len(t)), 400) * 6
+    x += np.sin(2 * math.pi * 31 * t) * 0.6
+    return x * (t / sec) ** 2.2
+
+
 def heartbeat(sec):
     out = np.zeros(int(sec * SR))
     beat = 0.82
@@ -151,9 +189,27 @@ def render(path_out, total, timeline):
         st, du = s["start"], s["dur"]
         for name in s.get("sfx", []):
             if isinstance(name, dict):
-                fn = {"crack": crack, "sting": sting}[name["name"]]
-                for at in name.get("at", [0]):
+                fn = {"crack": crack, "sting": sting, "glitch": glitch, "eas": eas, "power_down": power_down}[name["name"]]
+                ats = name.get("at", [0])
+                if ats == "line_end":   # right after the last voiced or shown line
+                    lts = s.get("line_times") or [[0, 0]]
+                    ats = [lts[-1][1] + 0.05]
+                for at in ats:
                     add(fx, fn(), st + at, name.get("gain", 0.7))
+                continue
+            if name == "eas":
+                add(fx, eas(), st + max(0.0, du * 0.45), 0.55)
+                continue
+            if name == "glitch":
+                first = (s.get("line_times") or [[0.3]])[0][0]
+                add(fx, glitch(), st + first + 0.6, 0.6)
+                continue
+            if name == "power_down":
+                first = (s.get("line_times") or [[0.0]])[0][0]
+                add(fx, power_down(), st + first + 0.4, 0.8)
+                continue
+            if name == "rumble":
+                add(fx, rumble(du), st, 0.9)
                 continue
             if name == "buzz":
                 first = next((lt[0] for lt in s.get("line_times", []) if lt[3]), 0.3)

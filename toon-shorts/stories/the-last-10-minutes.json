@@ -1,0 +1,118 @@
+{
+  "project": "the-last-10-minutes",
+  "title": "THE LAST 10 MINUTES",
+  "format": "interactive",
+  "genre": "Nuclear thriller / Mystery / Survival",
+  "aspect": "9:16",
+  "mood": "flat grey Monday daylight turning wrong; red alert glow; silence before impact",
+
+  "voices": {
+    "narrator": { "kokoro": "am_fenrir", "speed": 1.08,
+                  "fx": "asetrate=44100*0.9,aresample=44100,atempo=1.111,bass=g=3:f=120,lowpass=f=7500,aecho=0.5:0.4:30:0.08,volume=1.4" },
+    "reporter": { "kokoro": "af_nicole", "speed": 1.02,
+                  "fx": "highpass=f=150,lowpass=f=6000,tremolo=f=6:d=0.15,aecho=0.5:0.4:60:0.12,volume=1.0" },
+    "dad":      { "kokoro": "am_onyx", "speed": 1.02,
+                  "fx": "asetrate=44100*0.95,aresample=44100,atempo=1.053,highpass=f=250,lowpass=f=3600,volume=1.15" }
+  },
+  "music": "nuclear thriller: pulsing low synth drone, ticking clock, emergency alert tones, rising rumble to impact",
+  "mix": { "voice": 1.0, "music": 0.65, "gap": 0.25, "lufs": -15, "duck_ratio": 2 },
+
+  "characters": {
+    "alex": "19-year-old: messy black hair, tired eyes; grey hoodie torso with drawstrings and a pocket",
+    "sister": "Alex's little sister: brown pigtails with red ties; yellow dress torso; small",
+    "reporter": "TV news reporter: neat bob haircut; red blazer over a white shirt",
+    "dad": "Alex's father, only ever heard on the phone"
+  },
+  "locations": {
+    "street": "midtown street on a grey Monday morning: tall buildings, yellow cabs, crosswalk, pedestrians",
+    "times_square": "Times Square: walls of giant screens and billboards, crowds below",
+    "apartment": "32nd-floor apartment: floor-to-ceiling window over the skyline, couch, lamp",
+    "skyline": "the city skyline from the apartment window, the horizon beyond",
+    "phone": "Alex's phone"
+  },
+
+  "shots": [
+    { "id": 1, "location": "skyline", "hold": 3.2, "sfx": ["tick"], "lines": [
+        { "who": "narrator", "text": "", "silent": true, "read": 3.0 } ],
+      "card": { "title": "THE LAST 10 MINUTES", "time": "11:50 AM", "place": "NEW YORK CITY" } },
+    { "id": 2, "location": "street", "lines": [
+        { "who": "narrator", "text": "It was an ordinary Monday morning. People were rushing to work, children were walking to school, and traffic filled the streets." } ] },
+    { "id": 3, "location": "street", "sfx": ["eas"], "lines": [
+        { "who": "narrator", "text": "Until every phone in the city received the same emergency alert." } ] },
+    { "id": 4, "location": "phone", "lines": [
+        { "who": "narrator", "text": "", "silent": true, "read": 6.0 } ],
+      "alert": { "kind": "fema",
+                 "header": "EMERGENCY ALERT", "level": "CRITICAL", "from": "FEDERAL EMERGENCY MANAGEMENT AGENCY",
+                 "body": "A nuclear missile has been detected heading toward the United States.\nImpact location currently unknown.\nSeek immediate shelter. Await further instructions." } },
+    { "id": 5, "location": "street", "hold": 2.6, "lines": [
+        { "who": "narrator", "text": "Nobody moved." } ] },
+    { "id": 6, "location": "times_square", "lines": [
+        { "who": "narrator", "text": "Then the television screens inside Times Square switched to an emergency broadcast." } ] },
+    { "id": 7, "location": "times_square", "lines": [
+        { "who": "narrator", "text": "A reporter was visibly struggling to speak." },
+        { "who": "reporter", "text": "Officials are asking everyone to remain calm. We don't know who launched it. We don't know why." } ] },
+    { "id": 8, "location": "times_square", "sfx": ["glitch"], "lines": [
+        { "who": "narrator", "text": "Suddenly, the broadcast went black." } ] },
+    { "id": 9, "location": "card", "sfx": ["tick"], "lines": [
+        { "who": "narrator", "text": "", "silent": true, "read": 1.7 } ], "card": { "time": "11:52 AM" } },
+    { "id": 10, "location": "apartment", "sfx": ["ring"], "lines": [
+        { "who": "narrator", "text": "Inside an apartment on the thirty-second floor, nineteen-year-old Alex received a phone call from his father, who worked at a government facility." } ] },
+    { "id": 11, "location": "phone", "sfx": [{ "name": "glitch", "at": "line_end" }], "lines": [
+        { "who": "dad", "text": "Alex, listen carefully. You need to get your little sister and" } ],
+      "phone": { "contact": "DAD", "call": true, "drop": true } },
+    { "id": 12, "location": "phone", "sfx": ["buzz"], "lines": [
+        { "who": "narrator", "text": "A second later, Alex received a text." },
+        { "who": "dad", "text": "", "silent": true, "bubble": "Whatever happens, DO NOT trust the emergency broadcast." } ],
+      "phone": { "contact": "DAD", "time": "11:52 AM" } },
+    { "id": 13, "location": "phone", "sfx": ["buzz", "sting"], "lines": [
+        { "who": "narrator", "text": "Then another message arrived." },
+        { "who": "unknown", "text": "", "silent": true, "bubble": "Your father is lying. He knows who launched it." } ],
+      "phone": { "contact": "UNKNOWN NUMBER", "time": "11:53 AM" } },
+    { "id": 14, "location": "apartment", "lines": [
+        { "who": "narrator", "text": "Alex looked at his sister. She was crying." } ] },
+    { "id": 15, "location": "card", "sfx": ["tick"], "lines": [
+        { "who": "narrator", "text": "", "silent": true, "read": 1.7 } ], "card": { "time": "11:55 AM" } },
+    { "id": 16, "location": "phone", "sfx": ["eas"], "lines": [
+        { "who": "narrator", "text": "A second emergency alert appeared. But this one was different." },
+        { "who": "narrator", "text": "", "silent": true, "read": 6.5 } ],
+      "alert": { "kind": "unknown",
+                 "header": "UNIDENTIFIED TRANSMISSION", "level": "", "from": "SOURCE UNKNOWN",
+                 "body": "“Citizens of the United States. This is not an attack. This is a warning. You have been living alongside something you were never supposed to discover.”" } },
+    { "id": 17, "location": "phone", "sfx": ["glitch"], "lines": [
+        { "who": "narrator", "text": "The screen went black." } ],
+      "alert": { "kind": "unknown", "dead": true,
+                 "header": "UNIDENTIFIED TRANSMISSION", "level": "", "from": "SOURCE UNKNOWN",
+                 "body": "“Citizens of the United States. This is not an attack. This is a warning. You have been living alongside something you were never supposed to discover.”" } },
+    { "id": 18, "location": "card", "sfx": ["tick"], "lines": [
+        { "who": "narrator", "text": "", "silent": true, "read": 1.7 } ], "card": { "time": "11:57 AM" } },
+    { "id": 19, "location": "phone", "sfx": ["ring", "sting"], "lines": [
+        { "who": "narrator", "text": "Alex's father finally called again." },
+        { "who": "dad", "text": "Son, there's something I never told you. Your mother didn't die in that accident." } ],
+      "phone": { "contact": "DAD", "call": true } },
+    { "id": 20, "location": "apartment", "sfx": ["power_down"], "hold": 3.0, "lines": [
+        { "who": "narrator", "text": "The lights went out." } ] },
+    { "id": 21, "location": "card", "sfx": ["tick"], "lines": [
+        { "who": "narrator", "text": "", "silent": true, "read": 1.7 } ], "card": { "time": "11:59 AM" } },
+    { "id": 22, "location": "skyline", "hold": 3.6, "lines": [
+        { "who": "narrator", "text": "The entire city fell silent." } ] },
+    { "id": 23, "location": "apartment", "sfx": ["rumble"], "hold": 6.0, "lines": [
+        { "who": "narrator", "text": "Alex looked outside. A bright light appeared on the horizon." } ] },
+    { "id": 24, "location": "phone", "sfx": ["buzz", { "name": "sting", "at": "line_end" }], "lines": [
+        { "who": "narrator", "text": "And his phone displayed one final message." },
+        { "who": "narrator", "text": "", "silent": true, "read": 2.6 } ],
+      "alert": { "kind": "impact", "header": "IMPACT CONFIRMED.", "level": "", "from": "", "body": "" } },
+    { "id": 25, "location": "choice", "hold": 10.0, "sfx": ["tick"], "lines": [
+        { "who": "narrator", "text": "What does Alex do? Make the decision. Comment A, B, C, or D." } ],
+      "choice": {
+        "title": "WHAT DOES ALEX DO?",
+        "options": [
+          "A. Take his sister to the underground shelter.",
+          "B. Call his father and demand the truth.",
+          "C. Investigate the mysterious transmission.",
+          "D. Escape the city with his sister."
+        ],
+        "button": "MAKE THE DECISION",
+        "footer": "Comment A, B, C or D"
+      } }
+  ]
+}

@@ -148,6 +148,15 @@ CAST = {
                 hair="bun", brows="thin", glasses=False, moustache=None),
 }
 
+CAST.update({
+    "alex": dict(hat=None, torso="hoodie", torso_rgb=(120, 124, 132), beard=False, hair="messy",
+                 hair_rgb=(28, 24, 26), brows="thick", glasses=False, moustache=None),
+    "sister": dict(hat=None, torso="dress", torso_rgb=(244, 200, 60), beard=False, hair="pigtails",
+                   hair_rgb=(110, 66, 36), brows="thin", glasses=False, moustache=None),
+    "reporter": dict(hat=None, torso="suit", torso_rgb=(196, 36, 44), beard=False, hair="bob",
+                     hair_rgb=(60, 36, 24), brows="thin", glasses=False, moustache=None),
+})
+
 HAIR_RGB = {"messy": (92, 58, 34), "bun": (48, 30, 24), "slick": (25, 22, 24)}
 
 
@@ -177,6 +186,7 @@ class Pose:
         self.head_tilt = 0.0      # degrees, head only, about the neck
         self.grin = 1.0           # width of the creepy grin
         self.straps = False       # backpack straps over the shoulders
+        self.tears = 0.0          # 0..1 tear streams
         self.__dict__.update(kw)
 
 
@@ -265,6 +275,20 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
         for k in range(9):
             if k % 2:
                 cv.drawRect(skia.Rect.MakeLTRB(-1, -2.9 + k * 0.2, 1, -2.9 + (k + 1) * 0.2), fill((250, 245, 240)))
+    elif kind == "hoodie":
+        hood = path([(-0.55, -2.9), (-0.2, -2.55), (0.2, -2.55), (0.55, -2.9)], smooth=True)
+        cv.drawPath(hood, stroke((95, 98, 106), 0.12))
+        for sx in (-0.12, 0.12):
+            cv.drawPath(path([(sx, -2.6), (sx * 1.2, -2.1)]), stroke((235, 235, 235), 0.04))
+            cv.drawCircle(sx * 1.2, -2.08, 0.04, fill((235, 235, 235)))
+        pocket = skia.Rect.MakeLTRB(-0.45, -1.75, 0.45, -1.35)
+        cv.drawRoundRect(pocket, 0.08, 0.08, stroke((95, 98, 106), 0.05))
+        cv.drawRect(skia.Rect.MakeLTRB(-1, -1.28, 1, -1.0), fill((100, 104, 112)))
+    elif kind == "dress":
+        cv.drawPath(path([(-0.35, -2.9), (0, -2.55), (0.35, -2.9)], close=True), fill((255, 255, 255)))
+        for k in range(4):
+            cv.drawCircle(-0.4 + k * 0.27, -1.6, 0.06, fill((255, 255, 255)))
+        cv.drawRect(skia.Rect.MakeLTRB(-1, -2.0, 1, -1.9), fill((230, 160, 40)))
     elif kind == "blazer":
         cv.drawPath(path([(-0.42, -2.88), (0, -2.2), (0.42, -2.88)], close=True), fill((245, 245, 242)))
         if not pose.back:
@@ -318,11 +342,11 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
         _face(cv, spec, pose, hy)
         if spec.get("hair"):
             fp = Pose(**{k: v for k, v in pose.__dict__.items()}); fp.back = False
-            _hair(cv, spec["hair"], hy, fp)
+            _hair(cv, spec["hair"], hy, rgb=spec.get("hair_rgb"), pose=fp)
         cv.restore()
         cv.save(); cv.translate(1.9 * tw, 0)
         if spec.get("hair"):
-            _hair(cv, spec["hair"], hy, pose)
+            _hair(cv, spec["hair"], hy, rgb=spec.get("hair_rgb"), pose=pose)
         cv.restore()
         cv.restore()
         cv.drawCircle(0, hy, R, stroke(INK, ow))
@@ -331,7 +355,7 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
         if not pose.back and not pose.blank:
             _face(cv, spec, pose, hy)
         if spec.get("hair"):
-            _hair(cv, spec["hair"], hy, pose)
+            _hair(cv, spec["hair"], hy, rgb=spec.get("hair_rgb"), pose=pose)
     if spec.get("hat"):
         _hat(cv, spec["hat"], hy, pose)
     cv.restore()
@@ -480,6 +504,12 @@ def _face(cv, spec, pose, hy):
     elif m == "frown":
         p = skia.Path(); p.moveTo(-0.15, my + 0.06); p.quadTo(0, my - 0.08, 0.15, my + 0.06)
         cv.drawPath(p, stroke(INK, 0.06))
+    if pose.tears > 0:
+        for sx in (-0.33, 0.33):
+            ln = 0.25 + 0.7 * pose.tears
+            p = skia.Path(); p.moveTo(sx, ey + 0.12); p.quadTo(sx + 0.04, ey + 0.12 + ln * 0.5, sx - 0.02, ey + 0.12 + ln)
+            cv.drawPath(p, stroke((120, 190, 255), 0.09, 220))
+            cv.drawCircle(sx - 0.02, ey + 0.12 + ln, 0.07, fill((120, 190, 255), 230))
     if pose.sweat > 0:
         sx, sy = 0.62, hy - 0.45 + pose.sweat * 0.5
         p = skia.Path(); p.moveTo(sx, sy - 0.18); p.quadTo(sx + 0.12, sy, sx, sy + 0.06)
@@ -487,8 +517,8 @@ def _face(cv, spec, pose, hy):
         cv.drawPath(p, fill((140, 200, 255))); cv.drawPath(p, stroke(INK, 0.03))
 
 
-def _hair(cv, kind, hy, pose):
-    rgb = HAIR_RGB.get(kind, (60, 40, 30))
+def _hair(cv, kind, hy, pose, rgb=None):
+    rgb = rgb or HAIR_RGB.get(kind, (60, 40, 30))
     if pose.back:
         # back of the head: hair covers the top two-thirds, spiky edge, skin + neck below
         p = skia.Path()
@@ -533,6 +563,21 @@ def _hair(cv, kind, hy, pose):
         outlined(cv, p, rgb, 0.08)
         for xx in (-0.95, 0.95):
             cv.drawCircle(xx, hy + 0.05, 0.16, fill(rgb)); cv.drawCircle(xx, hy + 0.05, 0.16, stroke(INK, 0.05))
+    elif kind == "pigtails":
+        for sx in (-1, 1):
+            pt = skia.Path(); pt.addOval(skia.Rect.MakeLTRB(sx * 1.05 - 0.32, hy - 0.2, sx * 1.05 + 0.32, hy + 0.75))
+            outlined(cv, pt, rgb, 0.07)
+            cv.drawCircle(sx * 1.0, hy - 0.15, 0.13, fill((220, 40, 50))); cv.drawCircle(sx * 1.0, hy - 0.15, 0.13, stroke(INK, 0.05))
+        p = skia.Path(); p.moveTo(-1.0, hy - 0.05); p.cubicTo(-1.1, hy - 1.3, 1.1, hy - 1.3, 1.0, hy - 0.05)
+        p.quadTo(0.6, hy - 0.55, 0.05, hy - 0.62); p.quadTo(-0.6, hy - 0.55, -1.0, hy - 0.05); p.close()
+        outlined(cv, p, rgb, 0.08)
+        cv.drawPath(path([(0.05, hy - 1.0), (0.05, hy - 0.62)]), stroke(tuple(int(c * 0.7) for c in rgb), 0.05))
+    elif kind == "bob":
+        p = skia.Path(); p.moveTo(-1.12, hy + 0.55); p.lineTo(-1.1, hy - 0.2)
+        p.cubicTo(-1.15, hy - 1.35, 1.15, hy - 1.35, 1.1, hy - 0.2); p.lineTo(1.12, hy + 0.55)
+        p.lineTo(0.82, hy + 0.55); p.lineTo(0.85, hy - 0.35); p.quadTo(0.1, hy - 0.45, -0.3, hy - 0.75)
+        p.quadTo(-0.75, hy - 0.4, -0.85, hy - 0.3); p.lineTo(-0.82, hy + 0.55); p.close()
+        outlined(cv, p, rgb, 0.08)
     elif kind == "slick":
         p = skia.Path()
         p.moveTo(-0.98, hy - 0.2); p.cubicTo(-0.9, hy - 1.2, 0.9, hy - 1.2, 0.98, hy - 0.2)

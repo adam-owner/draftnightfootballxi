@@ -23,7 +23,8 @@ sys.path.insert(0, os.path.join(HERE, "..", "scripts"))
 import skia  # noqa: E402
 
 W, H, FPS = 720, 1280, 30
-FILMS = {"fog-keeper": "film_fogkeeper", "school-texted-back": "film_school"}
+FILMS = {"fog-keeper": "film_fogkeeper", "school-texted-back": "film_school",
+         "the-last-10-minutes": "film_impact"}
 
 
 def film_for(doc):
