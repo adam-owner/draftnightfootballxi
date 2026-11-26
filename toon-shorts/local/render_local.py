@@ -27,7 +27,19 @@ FILMS = {"fog-keeper": "film_fogkeeper", "school-texted-back": "film_school"}
 
 
 def film_for(doc):
-    return importlib.import_module(FILMS[doc["project"]])
+    name = FILMS.get(doc["project"])
+    if not name:
+        raise SystemExit(f"No offline renderer for project '{doc['project']}'. Add a film_*.py module "
+                         f"and register it in FILMS (known: {', '.join(FILMS)}).")
+    return importlib.import_module(name)
+
+
+def _key(obj):
+    import hashlib
+    return hashlib.sha1(json.dumps(obj, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+
+
+RUNTIME = ("audio_path", "audio_duration", "line_times", "clip_path", "clip_url", "keyframe_url", "keyframe_path")
 
 
 def _probe(p):
@@ -40,9 +52,14 @@ def tts(doc, adir, voice):
     """One narration file per shot. Shots may hold several `lines` with different speakers."""
     import numpy as np
     import soundfile as sf
-    from kokoro_onnx import Kokoro
     mdir = os.environ.get("KOKORO_DIR", os.path.join(HERE, "models"))
-    k = Kokoro(os.path.join(mdir, "kokoro-v1.0.int8.onnx"), os.path.join(mdir, "voices-v1.0.bin"))
+    _k = []
+
+    def kokoro():
+        if not _k:   # load the model only if something actually needs synthesising
+            from kokoro_onnx import Kokoro
+            _k.append(Kokoro(os.path.join(mdir, "kokoro-v1.0.int8.onnx"), os.path.join(mdir, "voices-v1.0.bin")))
+        return _k[0]
     voices = doc.get("voices") or {"narrator": {"kokoro": voice, "speed": doc.get("voice", {}).get("local_speed", 0.97)}}
     trim = ("silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
             "silenceremove=start_periods=1:start_threshold=-45dB,areverse")
@@ -50,9 +67,13 @@ def tts(doc, adir, voice):
         lines = s.get("lines") or [{"who": "narrator", "text": s["narration"]}]
         mp3 = os.path.join(adir, f"narr_{s['id']}.mp3")
         meta = os.path.join(adir, f"narr_{s['id']}.json")
+        key = _key([lines, {ln["who"]: voices.get(ln["who"], voices.get("narrator")) for ln in lines}])
+        cached = None
         if os.path.exists(mp3) and os.path.exists(meta):
             with open(meta) as f:
-                s["line_times"] = json.load(f)
+                cached = json.load(f)
+        if isinstance(cached, dict) and cached.get("key") == key:
+            s["line_times"] = cached["times"]
         else:
             parts, times, t = [], [], 0.0
             for i, ln in enumerate(lines):
@@ -66,12 +87,13 @@ def tts(doc, adir, voice):
                     continue
                 vc = voices.get(ln["who"], voices.get("narrator"))
                 txt = ln["text"].replace("...", ", ").replace("…", ", ").strip(" ,")
-                samples, sr = k.create(txt, voice=vc["kokoro"], speed=float(vc.get("speed", 1.0)), lang="en-us")
+                samples, sr = kokoro().create(txt, voice=vc["kokoro"], speed=float(vc.get("speed", 1.0)), lang="en-us")
                 raw = os.path.join(adir, f"_l{s['id']}_{i}.wav"); done = raw + ".fx.wav"
                 sf.write(raw, samples, sr)
                 af = trim + ",bass=g=2:f=150,acompressor=threshold=-18dB:ratio=3"
                 if vc.get("fx"):
-                    af += "," + vc["fx"]
+                    # resample first so asetrate-based pitch shifts are relative to 44.1 kHz
+                    af += ",aresample=44100," + vc["fx"]
                 subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af", af, "-ar", "44100", "-ac", "1", done], check=True)
                 y, _ = sf.read(done)
                 os.remove(raw); os.remove(done)
@@ -84,7 +106,7 @@ def tts(doc, adir, voice):
             subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", wav, "-b:a", "192k", mp3], check=True)
             os.remove(wav)
             with open(meta, "w") as f:
-                json.dump(times, f)
+                json.dump({"key": key, "times": times}, f)
             s["line_times"] = times
         s["audio_path"] = mp3
         s["audio_duration"] = _probe(mp3)
@@ -127,7 +149,8 @@ def render_shot(args):
         arr = surf.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType)
         ff.stdin.write(arr.tobytes())
     ff.stdin.close()
-    ff.wait()
+    if ff.wait() != 0:
+        raise RuntimeError(f"ffmpeg failed while encoding shot {sid}")
     return sid, out
 
 
@@ -158,34 +181,51 @@ def main():
     tts(doc, adir, voice)
     total = sum(shot_len(doc, s) for s in doc["shots"])
 
-    if doc.get("music") and not os.path.exists(os.path.join(adir, "bgm.mp3")):
+    timeline, t0 = [], 0.0
+    for s in doc["shots"]:
+        d = shot_len(doc, s)
+        timeline.append({"id": s["id"], "start": t0, "dur": d, "sfx": s.get("sfx", []),
+                         "line_times": s.get("line_times", [])})
+        t0 += d
+    bgm_key = _key([doc.get("music"), timeline, round(total, 3)])
+    bgm_meta = os.path.join(adir, "bgm.json")
+    old_key = json.load(open(bgm_meta)).get("key") if os.path.exists(bgm_meta) else None
+    if doc.get("music") and (not os.path.exists(os.path.join(adir, "bgm.mp3")) or old_key != bgm_key):
         wav = os.path.join(adir, "bgm.wav")
         if hasattr(film, "make_music"):
-            timeline, t0 = [], 0.0
-            for s in doc["shots"]:
-                d = shot_len(doc, s)
-                timeline.append({"id": s["id"], "start": t0, "dur": d, "sfx": s.get("sfx", []),
-                                 "line_times": s.get("line_times", [])})
-                t0 += d
             film.make_music(wav, total, timeline)
         else:
             import music_local
             music_local.render(wav, total + 1)
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", wav, "-b:a", "192k", os.path.join(adir, "bgm.mp3")], check=True)
         os.remove(wav)
+        with open(bgm_meta, "w") as f:
+            json.dump({"key": bgm_key}, f)
         print(f"[bgm] {total + 1:.1f}s")
 
-    jobs = []
+    redo = set()
+    if "--redo" in sys.argv:
+        redo = {int(x) for x in sys.argv[sys.argv.index("--redo") + 1].split(",")}
+    jobs, pending_meta = [], {}
     for s in doc["shots"]:
         T = shot_len(doc, s)
         out = os.path.join(cdir, f"clip_{s['id']}.mp4")
+        meta = out[:-4] + ".json"
+        ckey = _key([{k: v for k, v in s.items() if k not in RUNTIME}, s.get("line_times"), T, W, H, FPS])
         s["clip_path"] = out
-        if not os.path.exists(out):
+        old = json.load(open(meta)).get("key") if os.path.exists(meta) else None
+        if not os.path.exists(out) or old != ckey or s["id"] in redo:
             jobs.append((project, s["id"], T, out))
+            pending_meta[s["id"]] = (meta, ckey)
+            if os.path.exists(meta):
+                os.remove(meta)
     with open(path, "w") as f:
         json.dump(doc, f, ensure_ascii=False, indent=2)
     with Pool(min(4, os.cpu_count() or 2)) as pool:
         for sid, out in pool.imap_unordered(render_shot, jobs):
+            meta, ckey = pending_meta[sid]
+            with open(meta, "w") as f:      # mark complete only after the clip is fully written
+                json.dump({"key": ckey}, f)
             print(f"[shot {sid}] rendered")
 
     import assemble

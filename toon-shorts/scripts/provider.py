@@ -54,7 +54,7 @@ class MuapiProvider(Provider):
         res = None
         try:
             res = muapi_client._get(f"/predictions/{job_id}/result")
-        except Exception as e:
+        except Exception:
             try:
                 res = muapi_client._get(f"/predictions/{job_id}")
             except Exception as e2:

@@ -315,7 +315,7 @@ def messages(cv, W, H, t, T, shot):
         r = skia.Rect.MakeXYWH(scr.left() + 28, y, min(bubble_w, max(f.measureText(l) for l in lines) + 44), bh)
         cv.save(); cv.translate(r.left(), r.bottom()); cv.scale(0.8 + 0.2 * pop, 0.8 + 0.2 * pop); cv.translate(-r.left(), -r.bottom())
         red = unknown or "WHO" in txt
-        cv.drawRoundRect(r, 26, 26, fill((120, 20, 26) if red and unknown else (52, 52, 58)))
+        cv.drawRoundRect(r, 26, 26, fill((120, 20, 26) if red else (52, 52, 58)))
         for i, l in enumerate(lines):
             text(cv, l, r.left() + 22, r.top() + 44 + i * 38, 29, (255, 255, 255), 255 * pop,
                  "bold" if l.isupper() and len(l) > 3 else "reg")
@@ -513,7 +513,6 @@ def s11(cv, W, H, t, T, shot):
 
 
 def s12(cv, W, H, t, T, shot):
-    u = t / T
     # split: phone message, then cut to the light under the bedroom door as a shadow passes
     lt = shot.get("line_times", [])
     end = lt[0][1] if lt else T * 0.6
@@ -578,7 +577,6 @@ def _turn(t):
 
 
 def s16(cv, W, H, t, T, shot):
-    u = t / T
     turn, tilt = _turn(t)
     grin = clamp01((t - 2.9) / 0.7)
     jitter = math.sin(t * 47) * 1.5 if t > 3.0 else 0.0

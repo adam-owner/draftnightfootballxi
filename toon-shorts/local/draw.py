@@ -14,8 +14,12 @@ INK = (43, 27, 18)          # outline colour
 SKIN = (250, 248, 242)      # head white
 
 
+def _c8(v):
+    return max(0, min(255, int(v)))
+
+
 def C(rgb, a=255):
-    return skia.Color(int(rgb[0]), int(rgb[1]), int(rgb[2]), int(a))
+    return skia.Color(_c8(rgb[0]), _c8(rgb[1]), _c8(rgb[2]), _c8(a))
 
 
 def fill(rgb, a=255, blend=None):

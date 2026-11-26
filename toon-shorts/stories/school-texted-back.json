@@ -7,8 +7,8 @@
   "voices": {
     "narrator": {
       "kokoro": "am_fenrir",
-      "speed": 0.92,
-      "fx": "asetrate=44100*0.84,aresample=44100,atempo=1.1,lowpass=f=5500,aecho=0.6:0.5:45:0.15,volume=0.95"
+      "speed": 1.08,
+      "fx": "asetrate=44100*0.9,aresample=44100,atempo=1.111,bass=g=3:f=120,lowpass=f=7500,aecho=0.5:0.4:30:0.08,volume=1.0"
     },
     "mom": {
       "kokoro": "af_heart",
