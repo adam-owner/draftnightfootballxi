@@ -56,6 +56,14 @@ def tts(doc, adir, voice):
         else:
             parts, times, t = [], [], 0.0
             for i, ln in enumerate(lines):
+                if ln.get("silent"):
+                    # on-screen message with no voice: hold long enough to read it
+                    pre = float(ln.get("delay", 0.0)) + (0.35 if i else 0.0)
+                    dur = float(ln.get("read", 1.3 + 0.045 * len(ln.get("bubble") or ln["text"])))
+                    parts.append(np.zeros(int((pre + dur) * 44100)))
+                    times.append([round(t + pre, 3), round(t + pre + dur, 3), ln["who"], ln.get("bubble")])
+                    t += pre + dur
+                    continue
                 vc = voices.get(ln["who"], voices.get("narrator"))
                 txt = ln["text"].replace("...", ", ").replace("…", ", ").strip(" ,")
                 samples, sr = k.create(txt, voice=vc["kokoro"], speed=float(vc.get("speed", 1.0)), lang="en-us")

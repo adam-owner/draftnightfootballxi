@@ -8,7 +8,7 @@
     "narrator": {
       "kokoro": "am_fenrir",
       "speed": 0.88,
-      "fx": "lowpass=f=7000,aecho=0.6:0.5:35:0.12,volume=0.5"
+      "fx": "lowpass=f=7000,aecho=0.6:0.5:35:0.12,volume=1.45"
     },
     "mom": {
       "kokoro": "af_heart",
@@ -125,17 +125,20 @@
         {
           "who": "mom",
           "text": "Are you asleep? I'm outside your bedroom. Open the door.",
-          "bubble": "Are you asleep? I'm outside your bedroom. Open the door."
+          "bubble": "Are you asleep? I'm outside your bedroom. Open the door.",
+          "silent": true
         },
         {
           "who": "mom",
           "text": "Why aren't you answering?",
-          "bubble": "Why aren't you answering?"
+          "bubble": "Why aren't you answering?",
+          "silent": true
         },
         {
           "who": "mom",
           "text": "I'm getting worried. I can hear you walking around.",
-          "bubble": "I'm getting worried. I can hear you walking around."
+          "bubble": "I'm getting worried. I can hear you walking around.",
+          "silent": true
         }
       ],
       "phone": {
@@ -212,7 +215,8 @@
         {
           "who": "mom",
           "text": "If you're at school... who just walked past my bedroom?",
-          "bubble": "If you're at school…\nWHO JUST WALKED PAST MY BEDROOM?"
+          "bubble": "If you're at school…\nWHO JUST WALKED PAST MY BEDROOM?",
+          "silent": true
         }
       ],
       "phone": {
@@ -246,7 +250,8 @@
         {
           "who": "double",
           "text": "Stop calling your mother. She doesn't know what I look like.",
-          "bubble": "Stop calling your mother. She doesn't know what I look like."
+          "bubble": "Stop calling your mother. She doesn't know what I look like.",
+          "silent": true
         }
       ],
       "phone": {
