@@ -342,8 +342,9 @@ def call_screen(cv, W, H, t, T, shot):
     ph = shot.get("phone", {})
     name = ph.get("contact", "MOM")
     col = tuple(ph.get("color", (240, 120, 150)))
-    lt = [x for x in shot.get("line_times", []) if x[2] not in ("narrator", "alex", "alex_whisper", "adam", "sister")]
-    ans = lt[0][0] if lt else T * 0.5
+    talk = [x for x in shot.get("line_times", []) if x[2] != "narrator"]        # anyone on the call
+    lt = [x for x in talk if x[2] not in ("alex", "alex_whisper", "adam", "sister")]  # the caller's lines
+    ans = talk[0][0] if talk else T * 0.5      # connected as soon as either side speaks
     dropped = ph.get("drop") and lt and t > lt[-1][1]
     def bg():
         cv.drawRect(skia.Rect.MakeWH(W, H), fill(BLUE_NIGHT))
