@@ -169,6 +169,10 @@ class Pose:
         self.squash = 0.0
         self.back = False         # seen from behind: no face
         self.blank = False        # face with no features (the double)
+        self.head_turn = 0.0      # 0 = back of head, 1 = face fully turned to camera (body stays)
+        self.head_tilt = 0.0      # degrees, head only, about the neck
+        self.grin = 1.0           # width of the creepy grin
+        self.straps = False       # backpack straps over the shoulders
         self.__dict__.update(kw)
 
 
@@ -285,17 +289,48 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
     cv.restore()
     cv.drawPath(tor, stroke(INK, ow))
 
-    # head
+    if pose.straps and not pose.back:
+        for sx in (-1, 1):
+            cv.drawPath(path([(sx * 0.55, -2.85), (sx * 0.62, -1.6)]), stroke((90, 96, 104), 0.16))
+            cv.drawPath(path([(sx * 0.55, -2.85), (sx * 0.62, -1.6)]), stroke(INK, 0.03))
+
+    # head (tilts about the neck independently of the body)
     hy = -3.55
+    cv.save()
+    if pose.head_tilt:
+        cv.rotate(pose.head_tilt, 0, -2.75)
+    if pose.back and spec.get("hair"):
+        for sx in (-1, 1):   # ears from behind
+            cv.drawOval(skia.Rect.MakeLTRB(sx * 1.08 - 0.16, hy - 0.2, sx * 1.08 + 0.16, hy + 0.25), fill(SKIN))
+            cv.drawOval(skia.Rect.MakeLTRB(sx * 1.08 - 0.16, hy - 0.2, sx * 1.08 + 0.16, hy + 0.25), stroke(INK, 0.06))
     cv.drawCircle(0, hy, R, fill(SKIN))
     cv.drawCircle(0.25, hy + 0.3, R * 0.75, rad((0.25, hy + 0.35), 0.9, [((215, 210, 200), 0), ((215, 210, 200), 90)]))
-    cv.drawCircle(0, hy, R, stroke(INK, ow))
-    if not pose.back and not pose.blank:
+    if pose.back and pose.head_turn > 0:
+        # fake 3D head rotation: face slides in from one side, back hair slides out the other
+        head = skia.Path(); head.addCircle(0, hy, R)
+        cv.save(); cv.clipPath(head, doAntiAlias=True)
+        tw = pose.head_turn
+        cv.save(); cv.translate(-1.9 * (1 - tw), 0)
         _face(cv, spec, pose, hy)
-    if spec.get("hair"):
-        _hair(cv, spec["hair"], hy, pose)
+        if spec.get("hair"):
+            fp = Pose(**{k: v for k, v in pose.__dict__.items()}); fp.back = False
+            _hair(cv, spec["hair"], hy, fp)
+        cv.restore()
+        cv.save(); cv.translate(1.9 * tw, 0)
+        if spec.get("hair"):
+            _hair(cv, spec["hair"], hy, pose)
+        cv.restore()
+        cv.restore()
+        cv.drawCircle(0, hy, R, stroke(INK, ow))
+    else:
+        cv.drawCircle(0, hy, R, stroke(INK, ow))
+        if not pose.back and not pose.blank:
+            _face(cv, spec, pose, hy)
+        if spec.get("hair"):
+            _hair(cv, spec["hair"], hy, pose)
     if spec.get("hat"):
         _hat(cv, spec["hat"], hy, pose)
+    cv.restore()
 
     arm("r")
     if props:
@@ -306,7 +341,7 @@ def draw_character(cv, who, x, y, scale, pose=None, flip=False, props=None):
 
 def _eye(cv, ex, ey, kind, blink, look, twitch=0.0):
     k = kind
-    if blink > 0.6:
+    if blink > 0.6 and kind != "creepy":
         k = "closed"
     lx, ly = look
     if k == "dot":
@@ -320,6 +355,11 @@ def _eye(cv, ex, ey, kind, blink, look, twitch=0.0):
         cv.drawCircle(ex, ey, 0.2, fill((255, 255, 255)))
         cv.drawCircle(ex, ey, 0.2, stroke(INK, 0.05))
         cv.drawCircle(ex + lx * 0.08, ey + ly * 0.08, 0.075, fill(INK))
+    elif k == "creepy":
+        cv.drawCircle(ex, ey, 0.27, fill((255, 255, 255)))
+        cv.drawCircle(ex, ey, 0.27, stroke(INK, 0.06))
+        cv.drawCircle(ex + lx * 0.05, ey + ly * 0.05, 0.045, fill(INK))
+        return
     elif k == "happy":
         p = skia.Path()
         p.moveTo(ex - 0.15, ey + 0.05)
@@ -412,6 +452,27 @@ def _face(cv, spec, pose, hy):
     elif m == "open":
         cv.drawOval(skia.Rect.MakeLTRB(-0.14, my - 0.08, 0.14, my + 0.22), fill((90, 30, 30)))
         cv.drawOval(skia.Rect.MakeLTRB(-0.14, my - 0.08, 0.14, my + 0.22), stroke(INK, 0.05))
+    elif m == "creepy":
+        g = pose.grin
+        w = 0.35 + 0.55 * g
+        top = my - 0.12 - 0.18 * g
+        p = skia.Path(); p.moveTo(-w, top - 0.12 * g)
+        p.quadTo(0, top + 0.08, w, top - 0.12 * g)
+        p.quadTo(w * 0.55, my + 0.5 * g, 0, my + 0.55 * g)
+        p.quadTo(-w * 0.55, my + 0.5 * g, -w, top - 0.12 * g); p.close()
+        cv.drawPath(p, fill((70, 10, 14)))
+        cv.save(); cv.clipPath(p, doAntiAlias=True)
+        cv.drawRect(skia.Rect.MakeLTRB(-1, top - 0.3, 1, top + 0.13 + 0.05 * g), fill((245, 240, 220)))
+        cv.drawRect(skia.Rect.MakeLTRB(-1, my + 0.38 * g, 1, my + 0.8), fill((235, 230, 205)))
+        n = 14
+        for i in range(n + 1):
+            x = -w + 2 * w * i / n
+            cv.drawPath(path([(x, top - 0.3), (x, top + 0.2)]), stroke(INK, 0.025))
+            cv.drawPath(path([(x, my + 0.3 * g), (x, my + 0.8)]), stroke(INK, 0.025))
+        cv.restore()
+        cv.drawPath(p, stroke(INK, 0.06))
+        for sx in (-1, 1):   # cheek creases
+            cv.drawPath(path([(sx * (w + 0.02), top - 0.2 * g), (sx * (w + 0.12), top + 0.05)]), stroke(INK, 0.04))
     elif m == "frown":
         p = skia.Path(); p.moveTo(-0.15, my + 0.06); p.quadTo(0, my - 0.08, 0.15, my + 0.06)
         cv.drawPath(p, stroke(INK, 0.06))
@@ -425,16 +486,21 @@ def _face(cv, spec, pose, hy):
 def _hair(cv, kind, hy, pose):
     rgb = HAIR_RGB.get(kind, (60, 40, 30))
     if pose.back:
-        # hair covers the whole back of the head
+        # back of the head: hair covers the top two-thirds, spiky edge, skin + neck below
         p = skia.Path()
-        p.moveTo(-1.0, hy + 0.1)
-        p.cubicTo(-1.1, hy - 1.35, 1.1, hy - 1.35, 1.0, hy + 0.1)
-        p.quadTo(0.6, hy + 0.55, 0, hy + 0.5)
-        p.quadTo(-0.6, hy + 0.55, -1.0, hy + 0.1)
+        p.moveTo(-1.0, hy + 0.15)
+        p.cubicTo(-1.12, hy - 1.3, 1.12, hy - 1.3, 1.0, hy + 0.15)
+        tips = [(0.8, hy + 0.32), (0.62, hy + 0.12), (0.42, hy + 0.36), (0.2, hy + 0.14), (0.0, hy + 0.4),
+                (-0.2, hy + 0.14), (-0.42, hy + 0.36), (-0.62, hy + 0.12), (-0.8, hy + 0.32)]
+        for q in tips:
+            p.lineTo(*q)
         p.close()
-        outlined(cv, p, rgb, 0.085)
-        for xx in (-0.5, -0.15, 0.2, 0.55):
-            cv.drawPath(path([(xx, hy - 0.8), (xx + 0.1, hy + 0.2)]), stroke(tuple(c * 0.75 for c in rgb), 0.04))
+        outlined(cv, p, rgb, 0.08)
+        dark = tuple(int(c * 0.72) for c in rgb)
+        for xx in (-0.55, -0.2, 0.15, 0.5):
+            q = skia.Path(); q.moveTo(xx * 0.6, hy - 0.85); q.quadTo(xx * 1.05, hy - 0.3, xx * 1.1, hy + 0.15)
+            cv.drawPath(q, stroke(dark, 0.05))
+        cv.drawCircle(0.05, hy - 0.55, 0.06, stroke(dark, 0.04))   # crown whorl
         if kind == "bun":
             cv.drawCircle(0, hy - 1.05, 0.38, fill(rgb)); cv.drawCircle(0, hy - 1.05, 0.38, stroke(INK, 0.07))
         return

@@ -426,7 +426,7 @@ def s4(cv, W, H, t, T, shot):
         def pack(cv_, p):
             r = skia.Rect.MakeLTRB(-1.3, -2.8, -0.6, -1.5)
             cv_.drawRoundRect(r, 0.2, 0.2, fill((110, 116, 124))); cv_.drawRoundRect(r, 0.2, 0.2, stroke(INK, 0.08))
-        p = Pose(eyes="half", mouth="frown", walk=walk, bob=abs(math.sin(t * 6)) * 0.08 if walk else 0,
+        p = Pose(straps=True, eyes="half", mouth="frown", walk=walk, bob=abs(math.sin(t * 6)) * 0.08 if walk else 0,
                  look=(0.9, 0), brow=0.3 + 0.6 * clamp01((u - 0.6) * 3))
         draw_character(cv, "adam", x, H * 0.9, 70, p, props=[pack])
     grain_vignette(cv, W, H, 200)
@@ -465,7 +465,7 @@ def s8(cv, W, H, t, T, shot):
     hallway(cv, cam, W, H, t)
     cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 10, 40), 90))
     with cam.layer(cv, 1.0):
-        p = Pose(eyes="wide", mouth="open" if u > 0.5 else "flat", brow=1.2, sweat=clamp01(u * 1.3),
+        p = Pose(straps=True, eyes="wide", mouth="open" if u > 0.5 else "flat", brow=1.2, sweat=clamp01(u * 1.3),
                  look=(math.sin(t * 7) * 0.4, 0), hand_r=(0.7, -2.6))
         def phone(cv_, p_):
             r = skia.Rect.MakeLTRB(0.4, -3.2, 1.0, -2.2)
@@ -486,7 +486,7 @@ def s10(cv, W, H, t, T, shot):
     cam = Cam(W, H, zoom=lerp(1.05, 1.12, u), cy=H * 0.5)
     hallway(cv, cam, W, H, t)
     with cam.layer(cv, 1.0):
-        p = Pose(eyes="wide", mouth="open" if 0.1 < u < 0.8 and math.sin(t * 14) > 0 else "flat", brow=1.0,
+        p = Pose(straps=True, eyes="wide", mouth="open" if 0.1 < u < 0.8 and math.sin(t * 14) > 0 else "flat", brow=1.0,
                  hand_r=(0.75, -3.6), hand_l=(-1.1, -1.7), sweat=0.6)
         def phone(cv_, p_):
             r = skia.Rect.MakeLTRB(0.6, -4.2, 1.05, -3.1)
@@ -507,7 +507,7 @@ def s11(cv, W, H, t, T, shot):
             r = skia.Rect.MakeLTRB(0.6, -4.2, 1.05, -3.1)
             cv_.drawRoundRect(r, 0.1, 0.1, fill((20, 20, 24))); cv_.drawRoundRect(r, 0.1, 0.1, stroke(INK, 0.05))
             cv_.drawRect(r.makeInset(0.05, 0.08), fill((150, 170, 230)))
-        draw_character(cv, "mom", W * 0.26, H * 0.95, 82, p, props=[phone])
+        draw_character(cv, "mom", W * 0.27, H * 1.02, 112, p, props=[phone])
     cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 60))
     grain_vignette(cv, W, H, 230)
 
@@ -532,7 +532,7 @@ def s13(cv, W, H, t, T, shot):
     cam = Cam(W, H, zoom=1.08, dy=math.sin(t * 5.2) * 3)
     hallway(cv, cam, W, H, t, lights_off=clamp01((u - 0.15) / 0.75))
     with cam.layer(cv, 1.0):
-        p = Pose(eyes="wide", brow=1.3, mouth="flat", sweat=(t * 0.6) % 1, look=(-0.9, -0.2), hand_l=(-0.9, -2.4))
+        p = Pose(straps=True, eyes="wide", brow=1.3, mouth="flat", sweat=(t * 0.6) % 1, look=(-0.9, -0.2), hand_l=(-0.9, -2.4))
         draw_character(cv, "adam", W * 0.62, H * 1.08, 120, p)
     # thuds shake
     k = (t % 1.15)
@@ -563,19 +563,52 @@ def s15(cv, W, H, t, T, shot):
     grain_vignette(cv, W, H, 240)
 
 
+TURN_KEYS = [(0.0, 0.0, 0), (1.2, 0.0, 0), (1.4, 0.38, 34), (2.2, 0.42, 38), (2.4, 0.74, -12), (2.85, 0.76, -16),
+             (3.0, 1.0, 28), (9.0, 1.0, 28)]   # (time, head_turn, head_tilt) - jerky, held, then snaps
+CLOSE_AT = 3.7
+
+
+def _turn(t):
+    for (t0, a0, d0), (t1, a1, d1) in zip(TURN_KEYS, TURN_KEYS[1:]):
+        if t0 <= t <= t1:
+            k = clamp01((t - t0) / max(1e-3, t1 - t0))
+            k = k ** 0.25 if a1 != a0 else k      # snap fast into each pose
+            return lerp(a0, a1, k), lerp(d0, d1, k)
+    return TURN_KEYS[-1][1], TURN_KEYS[-1][2]
+
+
 def s16(cv, W, H, t, T, shot):
     u = t / T
-    cam = Cam(W, H, zoom=lerp(3.2, 4.0, ease(u)), cx=W * 0.5, cy=H * 0.53)
-    hl = hallway(cv, cam, W, H, t, lights_dead_from=2)
-    with cam.layer(cv, 0.6):
-        fx, fy = hl.p(-hl.hw * 0.3, hl.fy, Hall.ZEND + 0.02)
-        lt = shot.get("line_times", [])
-        talking = lt and lt[0][0] < t < lt[0][1]
-        tilt = 8 * ease(clamp01((u - 0.2) / 0.3)) + (math.sin(t * 20) * 0.6 if talking else 0)
-        draw_character(cv, "double", fx, fy, 170 * (Hall.ZEND + 0.02),
-                       Pose(back=True, lean=tilt, hand_l=(-0.95, -1.4), hand_r=(0.95, -1.4)))
+    turn, tilt = _turn(t)
+    grin = clamp01((t - 2.9) / 0.7)
+    jitter = math.sin(t * 47) * 1.5 if t > 3.0 else 0.0
     on = flicker(t * 2, 99)
-    cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 150 * (1 - on)))
+    if t < CLOSE_AT:
+        cam = Cam(W, H, zoom=lerp(3.2, 3.8, ease(t / CLOSE_AT)), cx=W * 0.5, cy=H * 0.53)
+        hl = hallway(cv, cam, W, H, t, lights_dead_from=2)
+        with cam.layer(cv, 0.6):
+            fx, fy = hl.p(-hl.hw * 0.3, hl.fy, Hall.ZEND + 0.02)
+            p = Pose(back=True, head_turn=turn, head_tilt=tilt + jitter, eyes="creepy", mouth="creepy",
+                     grin=0.15 + 0.85 * grin, hand_l=(-0.95, -1.4), hand_r=(0.95, -1.4))
+            draw_character(cv, "double", fx, fy, 170 * (Hall.ZEND + 0.02), p)
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 150 * (1 - on)))
+    else:
+        # extreme close-up: body still facing the wall, face twisted round, grin too wide
+        k = t - CLOSE_AT
+        cam = Cam(W, H, zoom=lerp(1.0, 1.12, clamp01(k / 4)), cy=H * 0.45)
+        hallway(cv, Cam(W, H, zoom=5.5, cx=W * 0.5, cy=H * 0.5), W, H, t, lights_dead_from=0)
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 140))
+        with cam.layer(cv, 1.0):
+            lt = shot.get("line_times", [])
+            talking = lt and lt[0][0] < t < lt[0][1]
+            g = 1.0 + (0.06 * math.sin(t * 30) if talking else 0.02 * math.sin(t * 9))
+            p = Pose(back=True, head_turn=1.0, head_tilt=24 + math.sin(t * 31) * (2.5 if talking else 0.8),
+                     eyes="creepy", mouth="creepy", grin=g, look=(math.sin(t * 0.7) * 0.2, 0.1))
+            draw_character(cv, "double", W * 0.5, H * 1.2, 250, p)
+            glow(cv, W * 0.5, H * 0.1, 360, (180, 200, 255), 60 * on)
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 120 * (1 - on)))
+        if k < 0.12:
+            cv.drawRect(skia.Rect.MakeWH(W, H), fill((255, 255, 255), 160 * (1 - k / 0.12)))
     cv.drawRect(skia.Rect.MakeWH(W, H), fill((40, 0, 0), 40 + 20 * math.sin(t * 2.4)))
     grain_vignette(cv, W, H, 255)
 

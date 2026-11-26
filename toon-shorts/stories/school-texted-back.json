@@ -7,8 +7,8 @@
   "voices": {
     "narrator": {
       "kokoro": "am_fenrir",
-      "speed": 0.88,
-      "fx": "lowpass=f=7000,aecho=0.6:0.5:35:0.12,volume=1.45"
+      "speed": 0.92,
+      "fx": "asetrate=44100*0.84,aresample=44100,atempo=1.1,lowpass=f=5500,aecho=0.6:0.5:45:0.15,volume=0.95"
     },
     "mom": {
       "kokoro": "af_heart",
@@ -34,10 +34,10 @@
   "music": "horror drone: low detuned sine bed, dissonant string cluster swells, ticking clock, heartbeat during the reveal, stingers on each shock",
   "mix": {
     "voice": 1.0,
-    "music": 0.32,
+    "music": 0.65,
     "gap": 0.25,
     "lufs": -15,
-    "duck_ratio": 3
+    "duck_ratio": 2
   },
   "characters": {
     "adam": "the student (you): messy brown hair, half-lidded tired eyes; navy school blazer with a white collar and red-striped tie as the bean torso; grey backpack",
@@ -276,14 +276,30 @@
       "id": 16,
       "location": "hallway",
       "sfx": [
-        "heartbeat"
+        "heartbeat",
+        {
+          "name": "crack",
+          "at": [
+            1.4,
+            2.4,
+            3.0
+          ],
+          "gain": 0.9
+        },
+        {
+          "name": "sting",
+          "at": [
+            3.7
+          ],
+          "gain": 0.6
+        }
       ],
-      "hold": 5.0,
+      "hold": 8.5,
       "lines": [
         {
           "who": "double",
           "text": "We need to go home.",
-          "delay": 0.8
+          "delay": 3.9
         }
       ]
     },

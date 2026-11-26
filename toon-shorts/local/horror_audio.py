@@ -91,6 +91,18 @@ def step():
     return x + tail
 
 
+def crack():
+    t = _t(0.35)
+    rng = np.random.default_rng(8)
+    x = np.zeros_like(t)
+    for k in range(5):   # a cluster of dry snaps = bone crack
+        i = int((0.012 * k + rng.uniform(0, 0.01)) * SR)
+        n = int(0.006 * SR)
+        x[i:i + n] += rng.uniform(-1, 1, n) * (1 - k * 0.15)
+    x += np.sin(2 * math.pi * 90 * t) * np.exp(-t * 30) * 0.5
+    return x
+
+
 def heartbeat(sec):
     out = np.zeros(int(sec * SR))
     beat = 0.82
@@ -138,6 +150,11 @@ def render(path_out, total, timeline):
     for s in timeline:
         st, du = s["start"], s["dur"]
         for name in s.get("sfx", []):
+            if isinstance(name, dict):
+                fn = {"crack": crack, "sting": sting}[name["name"]]
+                for at in name.get("at", [0]):
+                    add(fx, fn(), st + at, name.get("gain", 0.7))
+                continue
             if name == "buzz":
                 first = next((lt[0] for lt in s.get("line_times", []) if lt[3]), 0.3)
                 add(fx, buzz(), st + max(0, first - 0.35), 0.5)
