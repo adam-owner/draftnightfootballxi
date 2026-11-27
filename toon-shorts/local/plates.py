@@ -38,8 +38,21 @@ def load_image(path):
 
 
 def frame_index(plate_dir, t, fps=30):
+    """1-based background frame for time t (plates are 30 fps after finalize_plate; stills have 1)."""
     n = _frame_count(plate_dir)
     return max(1, min(n, int(t * fps) + 1))
+
+
+def anchor_index(plate_dir, t):
+    a = anchors(plate_dir)
+    return max(0, min(len(a["frames"]) - 1, int(t * a.get("fps", 30))))
+
+
+def depth_index(plate_dir, t):
+    """Depth maps stay at the render fps (they are not interpolated)."""
+    a = anchors(plate_dir)
+    n = len([x for x in os.listdir(plate_dir) if x.startswith("depth_")])
+    return 1 if a.get("still") else max(1, min(n, int(t * a.get("plate_fps", 30)) + 1))
 
 
 def draw_plate(cv, plate_dir, t, W, H, fps=30):
@@ -53,7 +66,7 @@ def draw_plate(cv, plate_dir, t, W, H, fps=30):
 def anchor_at(plate_dir, name, t, W, H, fps=30):
     """Screen position (px), head radius (px) and depth for anchor `name` at time t."""
     a = anchors(plate_dir)
-    fr = a["frames"][frame_index(plate_dir, t, fps) - 1]
+    fr = a["frames"][anchor_index(plate_dir, t)]
     if name not in fr:
         return None
     x, y, ppm, z = fr[name]
@@ -78,6 +91,11 @@ def _depth(plate_dir, i, W, H):
     return a / (65535.0 if a.max() > 255 else 255.0) * DEPTH_MAX_M
 
 
+def stand_at(cv, plate_dir, x, y, r, z, who, pose, W, H, t=0.0, tint=(255, 255, 255), flip=False, props=None):
+    """Like stand(), but at an explicit screen position (used for seated characters)."""
+    return _draw_occluded(cv, plate_dir, x, y, r, z, who, pose, W, H, t, tint, flip, props)
+
+
 def stand(cv, plate_dir, name, who, t, W, H, pose=None, tint=(255, 255, 255), flip=False, props=None, fps=30):
     """Draw a 2D character standing on 3D anchor `name`. Characters stay unlit like the reference
     shorts (tint only for special moods). If the plate has a depth map, any part of the character
@@ -88,7 +106,11 @@ def stand(cv, plate_dir, name, who, t, W, H, pose=None, tint=(255, 255, 255), fl
     x, y, r, z = at
     if z <= 0.3 or r < 1.2 or y > H * 1.6 or x < -W * 0.3 or x > W * 1.3:
         return False
-    depth = _depth(plate_dir, frame_index(plate_dir, t, fps), W, H)
+    return _draw_occluded(cv, plate_dir, x, y, r, z, who, pose, W, H, t, tint, flip, props)
+
+
+def _draw_occluded(cv, plate_dir, x, y, r, z, who, pose, W, H, t, tint, flip, props):
+    depth = _depth(plate_dir, depth_index(plate_dir, t), W, H)
     if depth is None:
         p = skia.Paint()
         p.setColorFilter(skia.ColorFilters.Blend(skia.Color(*tint), skia.BlendMode.kModulate))
@@ -118,7 +140,7 @@ def stand(cv, plate_dir, name, who, t, W, H, pose=None, tint=(255, 255, 255), fl
 def crowd(cv, plate_dir, t, W, H, cast, frozen=False, alert=0.0, tint=(255, 255, 255), fps=30, phone=None):
     """All anchors named ped*: depth-sorted, walking toward (front view) or away (back view)."""
     a = anchors(plate_dir)
-    fr = a["frames"][frame_index(plate_dir, t, fps) - 1]
+    fr = a["frames"][anchor_index(plate_dir, t)]
     names = sorted([n for n in fr if n.startswith("ped")], key=lambda n: -fr[n][3])   # far first
     for k, n in enumerate(names):
         i = int(n[3:].split("_")[0])
@@ -132,3 +154,33 @@ def crowd(cv, plate_dir, t, W, H, cast, frozen=False, alert=0.0, tint=(255, 255,
                     hand_r=(0.6, -2.5) if frozen else (1.2, -1.6 + sw), hand_l=(-1.2, -1.6 - sw), **extra)
         stand(cv, plate_dir, n, who, t, W, H, pose, tint=tint, flip=fr[n][0] > 0.5,
               props=[phone] if (frozen or alert) and phone else None, fps=fps)
+
+
+def quad(plate_dir, name, t, W, H):
+    """Screen-space corners (TL, TR, BR, BL) of a 3D screen exported as ANC_<name>_c0..c3."""
+    a = anchors(plate_dir)
+    fr = a["frames"][anchor_index(plate_dir, t)]
+    pts = [fr.get("%s_c%d" % (name, i)) for i in range(4)]
+    if any(p is None or p[3] <= 0 for p in pts):
+        return None
+    return [(p[0] * W, p[1] * H) for p in pts]
+
+
+def draw_on_quad(cv, pts, w, h, paint_fn, glow=0.0):
+    """Render paint_fn(canvas, w, h) into a w x h image and map it onto the screen quad (perspective)."""
+    surf = skia.Surface(int(w), int(h)); c2 = surf.getCanvas(); c2.clear(skia.ColorBLACK)
+    paint_fn(c2, w, h)
+    img = surf.makeImageSnapshot()
+    m = skia.Matrix()
+    src = [skia.Point(0, 0), skia.Point(w, 0), skia.Point(w, h), skia.Point(0, h)]
+    dst = [skia.Point(*p) for p in pts]
+    if not m.setPolyToPoly(src, dst):
+        return
+    cv.save(); cv.concat(m)
+    cv.drawImage(img, 0, 0, skia.SamplingOptions(skia.FilterMode.kLinear))
+    if glow:
+        p = skia.Paint(); p.setBlendMode(skia.BlendMode.kPlus)
+        p.setImageFilter(skia.ImageFilters.Blur(w * 0.06, h * 0.06))
+        p.setAlphaf(glow)
+        cv.drawImage(img, 0, 0, skia.SamplingOptions(skia.FilterMode.kLinear), p)
+    cv.restore()

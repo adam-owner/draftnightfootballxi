@@ -148,6 +148,8 @@ B.sun((52, 8, 150), 1.6, rgb=(255, 240, 222), angle=10)
 # ---------------------------------------------------------------- camera: eye level, slow push, shallow DOF
 if CAMV == "push":
     keys = [(1, (-6.6, -7, 2.0), (86, 0, -5)), (FRAMES, (-6.5, -2.0, 2.0), (86.5, 0, -4.5))]
+elif CAMV == "aerial":  # the skyline from high above the avenue (title card / silent city)
+    keys = [(1, (-14, -40, 75), (68, 0, -12)), (FRAMES, (-14, -40, 75), (68, 0, -12))]
 else:  # close: the frozen crowd, nearer and lower
     keys = [(1, (-6.4, -2, 1.9), (86, 0, -8)), (FRAMES, (-6.3, -1.2, 1.9), (86, 0, -8))]
 if PROBE:

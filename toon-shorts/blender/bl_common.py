@@ -114,6 +114,7 @@ def point(name, loc, watts, rgb, radius=0.1):
 def area(name, loc, rot_deg, watts, rgb, size=2.0):
     d = bpy.data.lights.new(name, "AREA"); d.energy = watts; d.color = srgb(rgb); d.size = size
     o = bpy.data.objects.new(name, d); o.location = loc; o.rotation_euler = [math.radians(a) for a in rot_deg]
+    o.visible_camera = False          # light the scene, never show up as a glowing panel
     bpy.context.scene.collection.objects.link(o)
     return o
 
@@ -196,7 +197,7 @@ def export_anchors(sc, path, out_fps=30):
     H = sc.render.resolution_y
     src_fps = sc.render.fps
     n_out = int(round((sc.frame_end - sc.frame_start) / src_fps * out_fps)) + 1
-    out = {"W": sc.render.resolution_x, "H": H, "fps": out_fps, "frames": []}
+    out = {"W": sc.render.resolution_x, "H": H, "fps": out_fps, "plate_fps": src_fps, "frames": []}
     for k in range(n_out):
         f = sc.frame_start + k * src_fps / out_fps
         sc.frame_set(int(f), subframe=f - int(f))
@@ -226,3 +227,102 @@ def move(obj, frames_fps, start, velocity, frames, stop_at=None):
     for fc in obj.animation_data.action.fcurves:
         for kp in fc.keyframe_points:
             kp.interpolation = "BEZIER" if stop_at is not None else "LINEAR"
+
+
+# ---------------------------------------------------------------- Kenney kit instancing + shared looks
+import os as _os
+_KIT_CACHE = {}
+ASSETS = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "assets3d")
+KC = _os.path.join(ASSETS, "kenney", "city")
+KR = _os.path.join(ASSETS, "kenney", "racing")
+PAL = [(124, 168, 128), (140, 122, 196), (226, 152, 110), (122, 132, 150), (210, 190, 150), (110, 150, 190)]
+
+
+def kit(path, loc, rot_z=0.0, scale=10.0, name=None):
+    """Instance a Kenney glb: imported once (hidden source), then shared-mesh copies."""
+    sc = bpy.context.scene
+    if path not in _KIT_CACHE:
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=path)
+        new = [o for o in bpy.data.objects if o not in before]
+        for o in new:
+            o.hide_render = True
+        _KIT_CACHE[path] = new
+    inst = bpy.data.objects.new(name or _os.path.basename(path), None)
+    sc.collection.objects.link(inst)
+    for o in _KIT_CACHE[path]:
+        if o.type != "MESH":
+            continue
+        c = bpy.data.objects.new(o.name + "_i", o.data)
+        c.matrix_world = o.matrix_world.copy()
+        sc.collection.objects.link(c)
+        c.parent = inst
+    inst.location = loc
+    inst.rotation_euler = (0, 0, math.radians(rot_z))
+    inst.scale = (scale, scale, scale)
+    return inst
+
+
+def hdri_world(strength=1.15, name="sky_overcast.hdr"):
+    sc = bpy.context.scene
+    w = bpy.data.worlds.new("World"); sc.world = w; w.use_nodes = True
+    env = w.node_tree.nodes.new("ShaderNodeTexEnvironment")
+    env.image = bpy.data.images.load(_os.path.join(ASSETS, name))
+    w.node_tree.links.new(env.outputs[0], w.node_tree.nodes["Background"].inputs[0])
+    w.node_tree.nodes["Background"].inputs["Strength"].default_value = strength
+    return w
+
+
+def toon_look(sc, line=1.1, glow_threshold=0.9):
+    """Reference look: dark toon outlines on 3D geometry + soft glow on bright lights."""
+    sc.render.use_freestyle = True
+    sc.render.line_thickness_mode = "ABSOLUTE"
+    sc.render.line_thickness = line
+    fs = sc.view_layers[0].freestyle_settings
+    ls = fs.linesets.active or fs.linesets.new("toon")
+    if ls.linestyle is None:
+        ls.linestyle = bpy.data.linestyles.new("toon")
+    ls.select_by_visibility = True
+    ls.select_silhouette = True; ls.select_border = True; ls.select_crease = True
+    ls.linestyle.color = (0.06, 0.05, 0.05)
+    ls.linestyle.alpha = 0.85
+    sc.use_nodes = True
+    nt = sc.node_tree
+    rl = nt.nodes.get("Render Layers") or nt.nodes.new("CompositorNodeRLayers")
+    comp = nt.nodes.get("Composite") or nt.nodes.new("CompositorNodeComposite")
+    glare = nt.nodes.new("CompositorNodeGlare"); glare.glare_type = "FOG_GLOW"; glare.quality = "MEDIUM"
+    glare.threshold = glow_threshold; glare.size = 7
+    nt.links.new(rl.outputs["Image"], glare.inputs["Image"]); nt.links.new(glare.outputs["Image"], comp.inputs["Image"])
+
+
+def tower(x, y, h, mat, win_mat, trim_mat, w=8.5, face_x=None, face_y=None):
+    """Chunky skyline tower with a cap and rows of windows on the given faces."""
+    box("tower", (x, y, h / 2), (w, w, h), mat, bevel=0.25)
+    box("cap", (x, y, h + 0.4), (w + 0.7, w + 0.7, 0.8), trim_mat, bevel=0.1)
+    for z in range(6, int(h) - 2, 4):
+        if face_x:
+            box("winrow", (x + face_x * (w / 2 + 0.05), y, z), (0.25, w - 1.5, 1.6), win_mat)
+        if face_y:
+            box("winrow", (x, y + face_y * (w / 2 + 0.05), z), (w - 1.5, 0.25, 1.6), win_mat)
+
+
+def screen_quad(name, center, size, facing, mat):
+    """A flat billboard screen. facing: 'x-', 'x+', 'y-'. Exports its 4 corners as anchors
+    ANC_<name>_c0..c3 (top-left, top-right, bottom-right, bottom-left as seen from the front)."""
+    cx, cy, cz = center
+    w, h = size
+    if facing == "y-":
+        o = box(name, (cx, cy, cz), (w, 0.2, h), mat)
+        cs = [(cx - w / 2, cy - 0.11, cz + h / 2), (cx + w / 2, cy - 0.11, cz + h / 2),
+              (cx + w / 2, cy - 0.11, cz - h / 2), (cx - w / 2, cy - 0.11, cz - h / 2)]
+    elif facing == "x+":
+        o = box(name, (cx, cy, cz), (0.2, w, h), mat)
+        cs = [(cx + 0.11, cy - w / 2, cz + h / 2), (cx + 0.11, cy + w / 2, cz + h / 2),
+              (cx + 0.11, cy + w / 2, cz - h / 2), (cx + 0.11, cy - w / 2, cz - h / 2)]
+    else:  # x-
+        o = box(name, (cx, cy, cz), (0.2, w, h), mat)
+        cs = [(cx - 0.11, cy + w / 2, cz + h / 2), (cx - 0.11, cy - w / 2, cz + h / 2),
+              (cx - 0.11, cy - w / 2, cz - h / 2), (cx - 0.11, cy + w / 2, cz - h / 2)]
+    for i, c in enumerate(cs):
+        anchor("%s_c%d" % (name, i), c)
+    return o

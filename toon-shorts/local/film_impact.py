@@ -341,6 +341,16 @@ def alert_screen(cv, W, H, t, T, shot):
         text(cv, "IMPACT", W / 2, scr.centerY() - 20, 120, (255, 255, 255), 255, "black", "center")
         text(cv, "CONFIRMED.", W / 2, scr.centerY() + 110, 92, (255, 255, 255), 255, "black", "center")
         cv.restore(); end_phone(cv)
+        if al.get("kind") == "impact" and shot.get("ending"):
+            # the end: white flash ... fade to black ... hold on black
+            t0 = (shot.get("line_times") or [[0, 1.5]])[0][1] + 1.6
+            w = clamp01((t - t0) / 0.25)                       # flash up
+            b = clamp01((t - t0 - 0.9) / 1.4)                  # white fades to black
+            if w:
+                cv.drawRect(skia.Rect.MakeWH(W, H), fill((255, 255, 255), 255 * w))
+            if b:
+                cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 255 * ease(b)))
+            return
         fl = clamp01((t - (T - 1.0)) / 0.6)
         if fl:
             cv.drawRect(skia.Rect.MakeWH(W, H), fill((255, 255, 255), 255 * fl))
@@ -640,3 +650,312 @@ SHOTS = {1: s1, 2: s2, 3: s3, 4: s4, 5: s5, 6: s6, 7: s7, 8: s8, 9: s_card, 10: 
 def make_music(path_out, total, timeline):
     import horror_audio
     return horror_audio.render(path_out, total, timeline)
+
+
+# =====================================================================================================
+# 3D versions: Blender plates (blender/*.py) with the 2D characters composited in (plates.py).
+# Each falls back to the 2D shot above if its plate has not been rendered.
+# =====================================================================================================
+import os as _os
+import plates as P
+
+PLATES = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "out", "the-last-10-minutes", "plates")
+
+
+def _plate(name):
+    d = _os.path.join(PLATES, name)
+    return d if _os.path.exists(_os.path.join(d, "bg_0001.png")) and _os.path.exists(_os.path.join(d, "anchors.json")) else None
+
+
+def _zoom(cv, W, H, z, cx=0.5, cy=0.5):
+    cv.translate(W * cx, H * cy); cv.scale(z, z); cv.translate(-W * cx, -H * cy)
+
+
+def _phone_prop(alert):
+    def phone(cv_, p, a=alert):
+        r = skia.Rect.MakeLTRB(0.35, -2.9, 0.85, -2.1)
+        cv_.drawRoundRect(r, 0.08, 0.08, fill((20, 20, 24)))
+        if a > 0:
+            cv_.drawRect(r.makeInset(0.05, 0.07), fill(RED))
+            glow(cv_, r.centerX(), r.centerY(), 0.9, RED, 140 * a)
+    return phone
+
+
+def s1_3d(cv, W, H, t, T, shot):
+    d = _plate("skyline")
+    if not d:
+        return s1(cv, W, H, t, T, shot)
+    cv.save(); _zoom(cv, W, H, lerp(1.0, 1.08, ease(t / T)))
+    P.draw_plate(cv, d, 0, W, H)
+    cv.restore()
+    cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 0), 150))
+    c = shot["card"]; a = ease(clamp01(t / 0.6))
+    text(cv, "THE LAST", W / 2, H * 0.36, 92, (255, 255, 255), 255 * a, "black", "center")
+    text(cv, "10 MINUTES", W / 2, H * 0.45, 92, RED, 255 * a, "black", "center")
+    cv.drawRect(skia.Rect.MakeXYWH(W * 0.5 - W * 0.32 * a, H * 0.48, W * 0.64 * a, 5), fill((255, 255, 255)))
+    b = ease(clamp01((t - 0.7) / 0.5))
+    text(cv, c["time"] + "  —  " + c["place"], W / 2, H * 0.535, 34, (230, 230, 235), 255 * b, "bold", "center")
+    grain_vignette(cv, W, H, 150)
+
+
+def s2_3d(cv, W, H, t, T, shot):
+    d = _plate("s02")
+    if not d:
+        return s2(cv, W, H, t, T, shot)
+    P.draw_plate(cv, d, t, W, H)
+    P.crowd(cv, d, t, W, H, WALKERS)
+    grain_vignette(cv, W, H, 100)
+
+
+STOP_AT = 1.7     # must match --stop_at in render_plates_street.sh
+
+
+def s3_3d(cv, W, H, t, T, shot):
+    d = _plate("s03")
+    if not d:
+        return s3(cv, W, H, t, T, shot)
+    stopped = t > STOP_AT + 0.5
+    P.draw_plate(cv, d, t, W, H)
+    alert = clamp01((t - STOP_AT) / 0.4)
+    P.crowd(cv, d, t, W, H, WALKERS, frozen=stopped, alert=alert, phone=_phone_prop(alert))
+    if alert:
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill(RED, 50 * alert * alarm(t)))
+    grain_vignette(cv, W, H, 120)
+
+
+def s5_3d(cv, W, H, t, T, shot):
+    d = _plate("s05")
+    if not d:
+        return s5(cv, W, H, t, T, shot)
+    cv.save(); _zoom(cv, W, H, lerp(1.0, 1.14, ease(t / T)), cy=0.55)
+    P.draw_plate(cv, d, 0, W, H)
+    P.crowd(cv, d, 0, W, H, WALKERS, frozen=True, alert=1.0, phone=_phone_prop(1.0))
+    cv.restore()
+    cv.drawRect(skia.Rect.MakeWH(W, H), fill(RED, 55 * alarm(t)))
+    grain_vignette(cv, W, H, 150)
+
+
+# ---------------- Times Square: screen content painted onto the 3D screens
+def _ad(c, w, h, k, t):
+    col = [(250, 60, 120), (40, 180, 250), (250, 200, 40), (120, 230, 90), (180, 80, 250)][k % 5]
+    c.drawRect(skia.Rect.MakeWH(w, h), lin((0, 0), (w, h), [col, tuple(int(v * 0.45) for v in col)]))
+    c.drawRect(skia.Rect.MakeXYWH(w * 0.1, h * (0.25 + 0.08 * math.sin(t * 1.5 + k)), w * 0.55, h * 0.18), fill((255, 255, 255), 220))
+    c.drawCircle(w * 0.78, h * 0.62, h * 0.18, fill((255, 255, 255), 160))
+
+
+def _alert_panel(c, w, h, t, k):
+    on = alarm(t + k * 0.1)
+    c.drawRect(skia.Rect.MakeWH(w, h), fill(tuple(int(v * (0.45 + 0.55 * on)) for v in RED)))
+    text(c, "ALERT", w / 2, h / 2 + h * 0.12, min(h * 0.38, w / 3.4), (255, 255, 255), 240, "black", "center")
+
+
+def _broadcast(c, w, h):
+    c.drawRect(skia.Rect.MakeWH(w, h), fill(RED))
+    text(c, "EMERGENCY", w / 2, h * 0.46, h * 0.2, (255, 255, 255), 255, "black", "center")
+    text(c, "BROADCAST", w / 2, h * 0.72, h * 0.2, (255, 255, 255), 255, "black", "center")
+
+
+def times_square_3d(cv, W, H, t, mode, glitch=0.0, side_mode=None, dead_from=99):
+    d = _plate("tsq_alert" if mode in ("alert", "news", "black") else "tsq_ads")
+    if not d:
+        return False
+    P.draw_plate(cv, d, 0, W, H)
+    names = sorted({k.split("_")[0] for k in P.anchors(d)["frames"][0] if k.startswith("scr")}, key=lambda n: int(n[3:]))
+    for i, n in enumerate(names):
+        q = P.quad(d, n, 0, W, H)
+        if not q:
+            continue
+        if n == "scr0":
+            if mode == "ads":
+                fn = lambda c, w, h: _ad(c, w, h, 0, t)
+            elif mode == "alert":
+                fn = _broadcast
+            elif mode == "news":
+                fn = lambda c, w, h: news(c, skia.Rect.MakeWH(w, h), t, talking=False, tremble=1.0)
+            else:
+                fn = lambda c, w, h: c.drawRect(skia.Rect.MakeWH(w, h), fill((4, 4, 6)))
+            P.draw_on_quad(cv, q, 640, 360, fn, glow=0.35 if mode != "black" else 0)
+            if glitch:
+                xs = [p[0] for p in q]; ys = [p[1] for p in q]
+                glitch_fx(cv, skia.Rect.MakeLTRB(min(xs), min(ys), max(xs), max(ys)), t, glitch)
+        else:
+            sm = side_mode or ("ads" if mode == "ads" else "alert")
+            if i >= dead_from:
+                sm = "black"
+            fn = (lambda c, w, h, k=i: _ad(c, w, h, k, t)) if sm == "ads" else \
+                 (lambda c, w, h, k=i: _alert_panel(c, w, h, t, k)) if sm == "alert" else \
+                 (lambda c, w, h: c.drawRect(skia.Rect.MakeWH(w, h), fill((4, 4, 6))))
+            P.draw_on_quad(cv, q, 240, 180, fn, glow=0.3 if sm != "black" else 0)
+    # the crowd, standing in the plaza looking up (seen from behind)
+    fr = P.anchors(d)["frames"][0]
+    names = sorted([n for n in fr if n.startswith("crowd")], key=lambda n: -fr[n][3])
+    for n in names:
+        i = int(n[5:])
+        who = WALKERS[i % len(WALKERS)][0]
+        ph = i * 0.9
+        pose = Pose(back=True, bob=0.04 * math.sin(t * 2 + ph), lean=3 * math.sin(t * 0.7 + ph),
+                    hand_l=(-1.2, -1.6), hand_r=(1.2, -1.6) if mode == "ads" else (0.6, -3.1))
+        P.stand(cv, d, n, who, 0, W, H, pose)
+    if mode == "alert":
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill(RED, 45 * alarm(t)))
+    return True
+
+
+def s6_3d(cv, W, H, t, T, shot):
+    u = t / T
+    if not _plate("tsq_ads"):
+        return s6(cv, W, H, t, T, shot)
+    mode = "ads" if u < 0.35 else "alert"
+    g = clamp01(1 - abs(u - 0.35) / 0.06)
+    cv.save(); _zoom(cv, W, H, lerp(1.0, 1.1, ease(u)), cy=0.4)
+    times_square_3d(cv, W, H, t, mode, glitch=g)
+    cv.restore()
+    grain_vignette(cv, W, H, 130)
+
+
+def s7_3d(cv, W, H, t, T, shot):
+    d = _plate("tsq_alert")
+    if not d:
+        return s7(cv, W, H, t, T, shot)
+    u = t / T
+    z = ease(clamp01(u / 0.25))
+    if z < 1:
+        q = P.quad(d, "scr0", 0, W, H)
+        xs = [p[0] for p in q]; ys = [p[1] for p in q]
+        cx, cy = (min(xs) + max(xs)) / 2 / W, (min(ys) + max(ys)) / 2 / H
+        fill_z = min(W / (max(xs) - min(xs)), H * 0.5 / (max(ys) - min(ys)))
+        cv.save(); _zoom(cv, W, H, lerp(1.0, fill_z, z ** 1.5), cx, cy)
+        times_square_3d(cv, W, H, t, "news")
+        cv.restore()
+        if z > 0.85:
+            cv.drawRect(skia.Rect.MakeWH(W, H), fill((10, 10, 14), 255 * (z - 0.85) / 0.15))
+    if z >= 0.85:
+        rect = skia.Rect.MakeLTRB(-W * 0.12, H * 0.1, W * 1.12, H * 0.62)
+        news(cv, rect, t, talking=speaking(shot, t, "reporter"), tremble=1.0)
+        for y in range(int(rect.top()), int(rect.bottom()), 6):
+            cv.drawRect(skia.Rect.MakeLTRB(rect.left(), y, rect.right(), y + 2), fill((0, 0, 0), 40))
+        for k in range(6):
+            draw_character(cv, WALKERS[k][0], W * (0.08 + k * 0.17), H * 1.12, 60, Pose(back=True))
+    grain_vignette(cv, W, H, 160)
+
+
+def s8_3d(cv, W, H, t, T, shot):
+    if not _plate("tsq_alert"):
+        return s8(cv, W, H, t, T, shot)
+    u = t / T
+    g = clamp01(1 - abs(u - 0.4) / 0.12)
+    cv.save(); _zoom(cv, W, H, 1.12, cy=0.35)
+    times_square_3d(cv, W, H, t, "news" if u < 0.4 else "black", glitch=g, dead_from=99 if u < 0.4 else 1)
+    cv.restore()
+    grain_vignette(cv, W, H, 170)
+
+
+# ---------------- apartment
+def _seat(cv, d, name, who, t, W, H, pose):
+    at = P.anchor_at(d, name, t, W, H)
+    if not at:
+        return
+    x, y, r, z = at
+    pose.sit = True
+    # the anchor is the seat; sitting characters' hips are ~1.25 head-radii above their feet
+    P.stand_at(cv, d, x, y + r * 1.15, r, z, who, pose, W, H)
+
+
+def s10_3d(cv, W, H, t, T, shot):
+    d = _plate("apt_wide_on")
+    if not d:
+        return s10(cv, W, H, t, T, shot)
+    u = t / T
+    cv.save(); _zoom(cv, W, H, lerp(1.0, 1.12, ease(u)), cy=0.6)
+    P.draw_plate(cv, d, 0, W, H)
+    ring_on = u > 0.55
+    def phone(cv_, p):
+        r = skia.Rect.MakeLTRB(0.55, -3.0, 1.05, -2.1)
+        cv_.drawRoundRect(r, 0.08, 0.08, fill((20, 20, 24)))
+        cv_.drawRect(r.makeInset(0.05, 0.07), fill((90, 200, 120) if ring_on and math.sin(t * 12) > 0 else (130, 150, 200)))
+    _seat(cv, d, "sister", "sister", 0, W, H, Pose(eyes="dot", mouth="frown", look=(0.8, 0)))
+    P.stand(cv, d, "alex", "alex", 0, W, H, Pose(eyes="wide" if ring_on else "half", mouth="flat", hand_r=(0.8, -2.6),
+                                                 look=(0.6, 0.4), brow=0.4), props=[phone])
+    cv.restore()
+    grain_vignette(cv, W, H, 140)
+
+
+def s14_3d(cv, W, H, t, T, shot):
+    d = _plate("apt_close_on")
+    if not d:
+        return s14(cv, W, H, t, T, shot)
+    u = t / T
+    cv.save(); _zoom(cv, W, H, lerp(1.05, 1.22, ease(u)), cy=0.6)
+    P.draw_plate(cv, d, 0, W, H)
+    sob = abs(math.sin(t * 5))
+    _seat(cv, d, "sister", "sister", 0, W, H,
+          Pose(eyes="closed", mouth="open" if sob > 0.5 else "frown", tears=clamp01(u * 1.5), brow=1.2,
+               bob=sob * 0.06, hand_l=(-0.5, -3.3), hand_r=(0.5, -3.3)))
+    talk = speaking(shot, t, "alex")
+    P.stand(cv, d, "alex", "alex", 0, W, H,
+            Pose(eyes="half" if talk else "wide", brow=0.6 if talk else 1.0, look=(1, 0.3),
+                 mouth=("open" if math.sin(t * 16) > 0 else "smile") if talk else "frown",
+                 hand_r=(1.6, -2.3) if talk else (1.25, -1.6)))
+    cv.restore()
+    grain_vignette(cv, W, H, 170)
+
+
+def s20_3d(cv, W, H, t, T, shot):
+    on_d, off_d = _plate("apt_wide_on"), _plate("apt_wide_off")
+    if not (on_d and off_d):
+        return s20(cv, W, H, t, T, shot)
+    lt = shot.get("line_times", [])
+    off = lt[0][0] + 0.4 if lt else T * 0.3
+    lights = 1.0 if t < off else (0.0 if t > off + 0.35 or math.sin(t * 60) > 0 else 1.0)
+    d = on_d if lights > 0.5 else off_d
+    cv.save(); _zoom(cv, W, H, lerp(1.05, 1.12, t / T), cy=0.6)
+    P.draw_plate(cv, d, 0, W, H)
+    if lights < 0.5:
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 12), 70))
+    a_talk, s_talk = speaking(shot, t, "alex"), speaking(shot, t, "sister")
+    flap = math.sin(t * 16) > 0
+    _seat(cv, d, "sister", "sister", 0, W, H,
+          Pose(eyes="closed" if s_talk else "wide", brow=1.2, tears=0.8 if t > off else 0,
+               mouth=("open" if flap else "frown") if s_talk else "open", look=(0.6, -0.4),
+               bob=0.05 * abs(math.sin(t * 5)), hand_l=(-0.5, -3.3) if s_talk else (-1.25, -1.6)))
+    P.stand(cv, d, "alex", "alex", 0, W, H,
+            Pose(eyes="wide", brow=1.2, look=(-0.8, 0.2) if a_talk else (0.4, -0.6),
+                 mouth=("open" if flap else "flat") if a_talk else ("open" if lights < 0.5 else "flat"),
+                 hand_r=(1.7, -2.2) if a_talk else (1.25, -1.6)))
+    cv.restore()
+    grain_vignette(cv, W, H, 200)
+
+
+def s22_3d(cv, W, H, t, T, shot):
+    d = _plate("skyline")
+    if not d:
+        return s22(cv, W, H, t, T, shot)
+    cv.save(); _zoom(cv, W, H, lerp(1.0, 1.06, ease(t / T)))
+    P.draw_plate(cv, d, 0, W, H)
+    cv.restore()
+    cv.drawRect(skia.Rect.MakeWH(W, H), fill((10, 12, 24), 120))      # power out: the city goes grey and still
+    grain_vignette(cv, W, H, 180)
+
+
+def s23_3d(cv, W, H, t, T, shot):
+    d = _plate("apt_window_off")
+    if not d:
+        return s23(cv, W, H, t, T, shot)
+    u = t / T
+    light = ease(clamp01((u - 0.3) / 0.7)) * 0.85
+    cv.save(); _zoom(cv, W, H, lerp(1.0, 1.18, ease(u)), cy=0.42)
+    P.draw_plate(cv, d, 0, W, H)
+    cv.drawRect(skia.Rect.MakeWH(W, H), fill((0, 0, 14), 60))
+    if light:    # the light on the horizon, seen through the window, flooding the room
+        glow(cv, W * 0.62, H * 0.5, W * (0.25 + 1.5 * light), (255, 250, 230), 255 * min(1, light * 1.4))
+    P.stand(cv, d, "alex", "alex", 0, W, H, Pose(back=True, hand_l=(-1.0, -1.5), hand_r=(1.0, -1.5)))
+    P.stand(cv, d, "sister", "sister", 0, W, H, Pose(back=True, hand_l=(-1.2, -2.0)))
+    cv.restore()
+    if light:
+        cv.drawRect(skia.Rect.MakeWH(W, H), fill((255, 250, 235), 140 * light ** 3, blend=skia.BlendMode.kPlus))
+    grain_vignette(cv, W, H, 150)
+
+
+SHOTS.update({1: s1_3d, 2: s2_3d, 3: s3_3d, 5: s5_3d, 6: s6_3d, 7: s7_3d, 8: s8_3d, 10: s10_3d, 14: s14_3d,
+              20: s20_3d, 22: s22_3d, 23: s23_3d})
+SHOTS.pop(25, None)
