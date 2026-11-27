@@ -67,8 +67,8 @@ def skyline(cv, W, H, t, horizon=0.62, dark=0.0, light=0.0, seed=4, scale=1.0):
 
 
 # ============================================================ STREET
-WALKERS = [("biz", {}), ("woman", {}), ("adam", {"straps": True}), ("inspector", {}), ("rival", {}), ("biz", {}),
-           ("woman", {}), ("adam", {"straps": True})]
+WALKERS = [("biz", {}), ("woman", {}), ("adam", {"straps": True}), ("inspector", {}), ("rival", {}),
+           ("reporter", {}), ("alex", {}), ("woman", {}), ("biz", {}), ("adam", {"straps": True}), ("inspector", {})]
 
 
 def street(cv, cam, W, H, t, frozen=0.0, alert=0.0, seed=2):

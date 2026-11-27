@@ -157,23 +157,72 @@ def output(sc, W, H, frames, samples, out_dir, fps=30):
     sc.render.image_settings.file_format = "PNG"
     sc.render.filepath = out_dir.rstrip("/") + "/bg_"
     sc.render.film_transparent = False
+    depth_output(sc, out_dir)
 
 
-def export_anchors(sc, path):
-    """Per frame: screen x,y (0..1, origin top-left) and pixels-per-metre at each anchor."""
+DEPTH_MAX_M = 300.0
+
+
+def depth_output(sc, out_dir):
+    """Also write a 16-bit depth map per frame (depth_####.png, 0 = camera, 1 = DEPTH_MAX_M metres)
+    so 2D characters can be hidden behind nearer 3D objects when composited."""
+    sc.view_layers[0].use_pass_z = True
+    sc.use_nodes = True
+    nt = sc.node_tree
+    rl = nt.nodes.get("Render Layers") or nt.nodes.new("CompositorNodeRLayers")
+    mr = nt.nodes.new("CompositorNodeMapRange")
+    mr.inputs["From Min"].default_value = 0.0
+    mr.inputs["From Max"].default_value = DEPTH_MAX_M
+    mr.inputs["To Min"].default_value = 0.0
+    mr.inputs["To Max"].default_value = 1.0
+    mr.use_clamp = True
+    nt.links.new(rl.outputs["Depth"], mr.inputs["Value"])
+    fo = nt.nodes.new("CompositorNodeOutputFile")
+    fo.base_path = out_dir
+    fo.format.file_format = "PNG"
+    fo.format.color_mode = "BW"
+    fo.format.color_depth = "16"
+    fo.format.color_management = "OVERRIDE"
+    fo.format.view_settings.view_transform = "Standard"
+    fo.file_slots[0].path = "depth_"
+    nt.links.new(mr.outputs["Value"], fo.inputs[0])
+
+
+def export_anchors(sc, path, out_fps=30):
+    """Per output frame (at out_fps, even if the scene runs at a lower fps): screen x,y (0..1, origin
+    top-left), pixels-per-metre and camera depth for every ANC_ empty."""
     cam = sc.camera
     anchors = [o for o in sc.objects if o.name.startswith("ANC_")]
     H = sc.render.resolution_y
-    out = {"W": sc.render.resolution_x, "H": H, "frames": []}
-    for f in range(sc.frame_start, sc.frame_end + 1):
-        sc.frame_set(f)
+    src_fps = sc.render.fps
+    n_out = int(round((sc.frame_end - sc.frame_start) / src_fps * out_fps)) + 1
+    out = {"W": sc.render.resolution_x, "H": H, "fps": out_fps, "frames": []}
+    for k in range(n_out):
+        f = sc.frame_start + k * src_fps / out_fps
+        sc.frame_set(int(f), subframe=f - int(f))
         fr = {}
         for a in anchors:
             p = a.matrix_world.translation
             v = world_to_camera_view(sc, cam, p)
-            v2 = world_to_camera_view(sc, cam, p + Vector((0, 0, 1.0)))   # 1 m up -> scale
-            px_per_m = abs(v2.y - v.y) * H
-            fr[a.name[4:]] = [round(v.x, 5), round(1 - v.y, 5), round(px_per_m, 3), round(v.z, 3)]
+            v2 = world_to_camera_view(sc, cam, p + Vector((0, 0, 1.0)))
+            fr[a.name[4:]] = [round(v.x, 5), round(1 - v.y, 5), round(abs(v2.y - v.y) * H, 3), round(v.z, 3)]
         out["frames"].append(fr)
     with open(path, "w") as f:
         json.dump(out, f)
+
+
+def move(obj, frames_fps, start, velocity, frames, stop_at=None):
+    """Keyframe obj moving at `velocity` (vector m/s) from `start`; optionally ease to a stop at stop_at s."""
+    fps = frames_fps
+    T = (frames - 1) / fps
+    if stop_at is None or stop_at >= T:
+        keys = [(0.0, 0.0), (T, T)]
+    else:
+        brake = 0.8                                      # seconds of braking
+        keys = [(0.0, 0.0), (stop_at, stop_at), (stop_at + brake, stop_at + brake / 2), (T, stop_at + brake / 2)]
+    for t, dist_t in keys:
+        obj.location = tuple(s + v * dist_t for s, v in zip(start, velocity))
+        obj.keyframe_insert("location", frame=1 + t * fps)
+    for fc in obj.animation_data.action.fcurves:
+        for kp in fc.keyframe_points:
+            kp.interpolation = "BEZIER" if stop_at is not None else "LINEAR"

@@ -1,7 +1,7 @@
 {
   "project": "the-last-10-minutes",
   "title": "THE LAST 10 MINUTES",
-  "format": "interactive",
+  "format": "story",
   "genre": "Nuclear thriller / Mystery / Survival",
   "aspect": "9:16",
   "mood": "flat grey Monday daylight turning wrong; red alert glow; silence before impact",
@@ -524,33 +524,9 @@
         "level": "",
         "from": "",
         "body": ""
-      }
-    },
-    {
-      "id": 25,
-      "location": "choice",
-      "hold": 10.0,
-      "sfx": [
-        "tick"
-      ],
-      "lines": [
-        {
-          "who": "narrator",
-          "text": "What does Alex do? Make the decision. Comment A, B, C, or D."
-        }
-      ],
-      "choice": {
-        "title": "WHAT DOES ALEX DO?",
-        "options": [
-          "A. Take his sister to the underground shelter.",
-          "B. Call his father and demand the truth.",
-          "C. Investigate the mysterious transmission.",
-          "D. Escape the city with his sister."
-        ],
-        "button": "MAKE THE DECISION",
-        "footer": "Comment A, B, C or D"
       },
-      "no_captions": true
+      "hold": 6.0,
+      "ending": true
     }
   ],
   "captions": true
