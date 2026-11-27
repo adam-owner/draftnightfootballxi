@@ -29,6 +29,14 @@ def _frame_count(plate_dir):
     return len([n for n in os.listdir(plate_dir) if n.startswith("bg_") and n.endswith(".png")])
 
 
+def load_image(path):
+    """skia.Image.MakeFromEncoded(bytes) can return None and then crash on draw; use the file loader."""
+    img = skia.Image.open(path)
+    if img is None:
+        raise RuntimeError(f"could not load plate image {path}")
+    return img
+
+
 def frame_index(plate_dir, t, fps=30):
     n = _frame_count(plate_dir)
     return max(1, min(n, int(t * fps) + 1))
@@ -36,8 +44,7 @@ def frame_index(plate_dir, t, fps=30):
 
 def draw_plate(cv, plate_dir, t, W, H, fps=30):
     i = frame_index(plate_dir, t, fps)
-    with open(os.path.join(plate_dir, "bg_%04d.png" % i), "rb") as f:
-        img = skia.Image.MakeFromEncoded(f.read())
+    img = load_image(os.path.join(plate_dir, "bg_%04d.png" % i))
     cv.drawImageRect(img, skia.Rect.MakeWH(img.width(), img.height()), skia.Rect.MakeWH(W, H),
                      skia.SamplingOptions(skia.CubicResampler.Mitchell()))
     return i
