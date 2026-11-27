@@ -111,12 +111,12 @@ B.sun((58, 8, 160), 1.4, rgb=(255, 238, 220), angle=10)
 B.area("LGT_window_fill", (0, 7.6, Z + 1.6), (-90, 0, 0), 260, (225, 234, 255), size=8)   # daylight bounce through the glass
 if LIGHTS:
     B.point("LGT_lamp", (lx, ly, Z + 1.6), 90, (255, 200, 140), radius=0.25)
-    B.area("LGT_ceiling", (0, 4, Z + 2.95), (180, 0, 0), 220, (255, 224, 190), size=3)
+    B.area("LGT_ceiling", (0, 4, Z + 2.85), (0, 0, 0), 220, (255, 224, 190), size=3)   # (0,0,0) = shining down
 
 # ---------------------------------------------------------------- characters' marks + cameras
 if CAM == "wide":       # from the back-right corner toward the window: Alex standing, sister on the couch
     B.anchor("alex", (-0.6, 4.6, Z)); B.anchor("sister", (-3.55, 4.4, Z + 0.42))
-    keys = [(1, (3.9, 0.45, Z + 1.55), (85, 0, 40))]
+    keys = [(1, (4.2, 1.3, Z + 1.55), (85, 0, 52))]     # clear of the bookshelf; window + couch in frame
 elif CAM == "close":    # closer on the couch: sister crying, Alex beside her
     B.anchor("alex", (-2.5, 3.2, Z)); B.anchor("sister", (-3.55, 4.1, Z + 0.42))
     keys = [(1, (0.6, 1.6, Z + 1.25), (84, 0, 55))]
@@ -133,3 +133,6 @@ sc.frame_set(1)
 sc.render.filepath = os.path.join(OUT, "still_001.png")
 import bpy  # noqa: E402
 bpy.ops.render.render(write_still=True)
+
+# bpy can segfault during interpreter teardown after a successful render; files are saved, so exit now
+os._exit(0)

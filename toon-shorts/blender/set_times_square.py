@@ -95,3 +95,6 @@ sc.frame_set(1)
 sc.render.filepath = os.path.join(OUT, "still_001.png")
 import bpy  # noqa: E402
 bpy.ops.render.render(write_still=True)
+
+# bpy can segfault during interpreter teardown after a successful render; files are saved, so exit now
+os._exit(0)

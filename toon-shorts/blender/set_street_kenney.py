@@ -184,3 +184,6 @@ if STILL is not None:
     bpy.ops.render.render(write_still=True)
 else:
     bpy.ops.render.render(animation=True)
+
+# bpy can segfault during interpreter teardown after a successful render; files are saved, so exit now
+os._exit(0)
