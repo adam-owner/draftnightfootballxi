@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 toon-shorts/local/models/
+toon-shorts/assets3d/
